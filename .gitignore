@@ -1,0 +1,23 @@
+# This project is a single static file with no build step.
+# Nothing here should ever be committed except source and docs.
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local saved assessments and exports (these contain user data)
+*.json
+!.github/**/*.json
+*.docx
+*.pdf
+*.csv
+
+# Dependency dirs that should never appear (no dependencies by design)
+node_modules/
