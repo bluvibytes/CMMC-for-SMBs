@@ -37,8 +37,7 @@ only with people who need them.
 ## Reporting a vulnerability
 
 If you find a security issue in the tool itself, please report it privately
-rather than opening a public issue. Contact BluVi LLC through
-[bluvi.ai](https://bluvi.ai). Include what you found, how to reproduce it, and
+rather than opening a public issue. Email BluVi LLC at security@bluvi.ai. Include what you found, how to reproduce it, and
 the browser and version you used.
 
 Please allow a reasonable window for a fix before any public disclosure. This
