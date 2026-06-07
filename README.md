@@ -97,6 +97,4 @@ Built and maintained by **BluVi LLC**, a fractional CISO practice focused on pro
 
 ## Disclaimer
 
-This tool is provided for educational purposes, as is, without warranty of any kind. It is not affiliated with or endorsed by the Department of Defense (also designated the Department of War under Executive Order 14347, September 2025), the Cyber AB, or ISACA. 
-
-CMMC requirements and references change over time. Always confirm against the official sources before you attest.
+This tool is provided for educational purposes, as is, without warranty of any kind. It is not affiliated with or endorsed by the Department of Defense (also designated the Department of War under Executive Order 14347, September 2025), the Cyber AB, or ISACA. CMMC requirements and references change over time. Always confirm against the official sources before you attest.
