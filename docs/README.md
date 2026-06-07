@@ -8,4 +8,4 @@ Supporting educational material for CMMC for SMBs.
 
 Like the rest of this project's written content, it is licensed under Creative Commons Attribution 4.0 International (CC BY 4.0). See ../LICENSE-CONTENT.
 
-Maintained by BluVi LLC. https://bluvi.ai
+## Future documents will be placed in this folder
