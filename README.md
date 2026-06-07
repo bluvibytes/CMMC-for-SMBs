@@ -93,7 +93,7 @@ Corrections and improvements are welcome, especially fixes backed by a primary `
 
 ## Maintainer
 
-Built and maintained by **BluVi LLC**, a fractional CISO practice focused on protecting small defense contractors from overpaying for compliance. Website: [bluvi.ai](https://bluvi.ai).
+Built and maintained by **BluVi LLC**, a fractional CISO practice focused on protecting small defense contractors from overpaying for compliance. Website: [bluvi.ai](https://bluvi.ai). Contact: info@bluvi.ai.
 
 ## Disclaimer
 
