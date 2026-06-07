@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://bluvi.ai
+    about: Do not file security issues publicly. Report them privately via BluVi LLC.
