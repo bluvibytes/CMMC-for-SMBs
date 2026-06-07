@@ -1,0 +1,27 @@
+CMMC for SMBs: Level 1 Self-Assessment Tool
+Copyright 2026 BluVi LLC (https://bluvi.ai)
+
+This product includes software developed by BluVi LLC.
+
+Licensing
+---------
+- Software (code, logic, markup): Apache License 2.0. See LICENSE.
+- Content (explanatory and educational text): Creative Commons Attribution
+  4.0 International (CC BY 4.0). See LICENSE-CONTENT.
+
+Government sources
+------------------
+Assessment objective wording is quoted verbatim from the DoD CMMC Level 1
+Assessment Guide, a work of the United States Government. United States
+Government works are not subject to domestic copyright protection and are
+reproduced here as public-domain primary source material. They are not
+covered by the licenses above.
+
+This project is not affiliated with or endorsed by the Department of Defense,
+the Cyber AB, or ISACA. References to those organizations and to government
+publications are for identification and source attribution only.
+
+Trademarks
+----------
+CMMC and other names referenced in this project are the property of their
+respective owners and are used only to describe the subject matter.
