@@ -4,8 +4,7 @@ A free, offline, open-source tool that walks a small or medium-sized business th
 
 It runs entirely in your browser from a single file, collects no data, and makes no network calls. 
 
-**Use it here:** open `index.html` from wiin any modern browser for this repository.
-
+**Use it here:** open [`index.html`](https://github.com/bluvibytes/CMMC-for-SMBs/blob/main/index.html) in any modern browser. That single file is the entire tool: it runs locally on your computer and needs no internet connection.
 ---
 
 ## Why this exists
