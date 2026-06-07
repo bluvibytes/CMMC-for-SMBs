@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>CMMC for SMBs - Level 1 Self-Assessment</title>
+<style>
+  :root{
+    --ink:#0C1020; --ink-2:#131A35; --ink-3:#1E2D5A;
+    --bg:#F7F9FC; --surface:#FFFFFF; --line:#E2E8F0;
+    --text:#16203A; --muted:#5A6478; --faint:#687389;
+    --accent:#2233AA; --accent-bright:#60A3F1; --accent-weak:#E8F0FE;
+    --violet:#8844DD; --violet-ink:#6D28D9; --violet-weak:#F3EBFC;
+    --ok:#10B981; --ok-ink:#047857; --ok-weak:#E7F7F0; --ok-line:#BFE9D4;
+    --warn:#F59E0B; --warn-ink:#B45309; --warn-weak:#FCF1DD; --warn-line:#F0D9A8;
+    --bad:#EF4444; --bad-ink:#B91C1C; --bad-weak:#FCEBEB; --bad-line:#F3C6C6;
+    --r-sm:8px; --r-md:12px; --r-pill:999px;
+    --sh-1:0 1px 2px rgba(12,16,32,.06);
+    --sh-2:0 8px 24px -12px rgba(12,16,32,.18);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+    --maxw:900px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-underline-offset:2px}
+  h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;color:var(--ink)}
+  p{margin:0 0 .75rem}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 16px}
+  .skip{position:absolute;left:-9999px;top:0;background:var(--ink);color:#fff;padding:8px 12px;border-radius:0 0 var(--r-sm) 0;z-index:60}
+  .skip:focus{left:0}
+
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(247,249,252,.93);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line)}
+  .progress{height:4px;width:100%;background:var(--line);overflow:hidden}
+  .progress>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-bright));transition:width .25s ease}
+  #progwrap[data-s="ok"] .progress>span{background:var(--ok)}
+  .status{display:flex;align-items:center;gap:10px;padding:10px 0 2px;flex-wrap:wrap}
+  .status .count{font-weight:650;color:var(--ink);font-size:15px}
+  .status .pct{font:600 12px/1 var(--mono);color:var(--muted)}
+  .vstatus{font:600 11px/1 var(--mono);letter-spacing:.04em;padding:5px 10px;border-radius:var(--r-pill);background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+  .vstatus[data-s="ok"]{background:var(--ok-weak);color:var(--ok-ink);border-color:var(--ok-line)}
+  .vstatus[data-s="bad"]{background:var(--bad-weak);color:var(--bad-ink);border-color:var(--bad-line)}
+  .vstatus[data-s="warn"]{background:var(--warn-weak);color:var(--warn-ink);border-color:var(--warn-line)}
+  .vstatus[data-s="prog"]{background:var(--accent-weak);color:var(--accent);border-color:#c5d6f7}
+  .evb{font:600 11px/1 var(--mono);letter-spacing:.04em;padding:5px 10px;border-radius:var(--r-pill);background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+  .evb[data-s="warn"]{background:var(--warn-weak);color:var(--warn-ink);border-color:var(--warn-line)}
+  .evb[data-s="ok"]{background:var(--ok-weak);color:var(--ok-ink);border-color:var(--ok-line)}
+  .evb:empty{display:none}
+  #audit .audit-src{margin:10px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+  #audit .audit-src a{color:var(--accent);text-decoration:none;font-weight:600}
+  .diff-overlay{position:fixed;inset:0;z-index:200;background:rgba(12,16,32,.55);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto}
+  .diff-overlay[hidden]{display:none}
+  .diff-modal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);max-width:820px;width:100%;padding:20px 22px;box-shadow:0 18px 50px rgba(12,16,32,.3)}
+  .diff-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .diff-head h2{font-size:19px;margin:0}
+  .diff-intro{color:var(--muted);font-size:13.5px;margin:6px 0 14px}
+  .diff-pickers{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .diff-pick{display:flex;flex-direction:column;gap:6px;font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  .diff-pick input{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)}
+  .diff-out{border-top:1px solid var(--line);padding-top:14px}
+  .diff-empty,.diff-none{color:var(--faint);font-size:13.5px}
+  .diff-meta{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.6}
+  .diff-group{margin:0 0 16px}
+  .diff-group h3{font-size:14px;margin:0 0 6px;color:var(--ink)}
+  .diff-line{font-size:13px;line-height:1.5;color:var(--text);padding:4px 0;border-bottom:1px solid var(--line)}
+  .diff-line .id{font:600 12px/1.3 var(--mono);color:var(--accent)}
+  .diff-from{color:var(--bad-ink)}
+  .diff-to{color:var(--ok-ink)}
+  .vsub{color:var(--faint);font-size:12.5px;padding:0 0 6px;max-width:80ch}
+
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0 12px}
+  .actions .spacer{flex:1 1 auto}
+  .group{display:flex;gap:8px;align-items:center}
+  .savehint{font:600 11px/1 var(--mono);color:var(--warn-ink);margin-right:2px}
+
+  .btn{appearance:none;font:inherit;font-size:13.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:var(--r-sm);padding:8px 12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;gap:6px;min-height:38px;transition:background .15s ease,border-color .15s ease}
+  .btn:hover{background:#fff;border-color:#cdd6e4}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#1c2f97}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);font-size:12.5px;min-height:32px;padding:6px 10px}
+  .btn.ghost:hover{background:var(--accent-weak);color:var(--accent)}
+  .btn .car{width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-1px);opacity:.7}
+
+  .menu{position:relative}
+  .menu .sheet{position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-2);padding:6px;z-index:55}
+  .menu .sheet[data-align="right"]{left:auto;right:0}
+  .menu .item{display:flex;width:100%;text-align:left;gap:8px;align-items:center;background:none;border:0;font:inherit;font-size:14px;color:var(--text);padding:9px 10px;border-radius:var(--r-sm);cursor:pointer;text-decoration:none}
+  .menu .item:hover,.menu .item:focus-visible{background:var(--accent-weak);color:var(--accent);outline:none}
+
+  header.hero{padding:34px 0 18px}
+  .kicker{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  header.hero h1{font-size:30px;margin:.5rem 0 .4rem}
+  header.hero p.lede{color:var(--muted);font-size:16px;margin:0}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .chip{font:600 12px/1 var(--sans);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 11px}
+
+  section{padding:14px 0}
+  .sec-h{display:flex;align-items:baseline;gap:10px;margin:6px 0 12px}
+  .sec-h h2{font-size:20px}
+  .sec-h .tag{font:600 11px/1 var(--mono);color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+  .sec-h h2{margin:0}
+  .sec-toggle{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer}
+  .sec-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  .sec-toggle .chev{flex:0 0 auto;width:10px;height:10px;border-right:2.5px solid var(--violet-ink);border-bottom:2.5px solid var(--violet-ink);transform:rotate(-45deg);transition:transform .18s ease}
+  .sec-toggle[aria-expanded="true"] .chev{transform:rotate(45deg)}
+  section.collapsed>:not(.sec-h){display:none}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-1);padding:20px;margin:0 0 14px}
+  .card h3{font-size:17px;margin-bottom:6px}
+  .card .muted{color:var(--muted)}
+
+  .callout{border:1px solid var(--line);border-left:3px solid var(--faint);background:var(--surface);border-radius:var(--r-md);padding:14px 16px;margin:0 0 14px;display:flex;gap:12px;align-items:flex-start}
+  .callout .ic{flex:0 0 auto;width:20px;height:20px;border-radius:var(--r-pill);display:grid;place-items:center;font:700 12px/1 var(--sans);color:#fff;margin-top:1px}
+  .callout .body{min-width:0}
+  .callout .body strong{color:var(--ink)}
+  .callout p{margin:0;color:var(--text)}
+  .callout.info{border-left-color:var(--accent);background:var(--accent-weak)}
+  .callout.info .ic{background:var(--accent)}
+  .callout.warn{border-left-color:var(--warn);background:var(--warn-weak)}
+  .callout.warn .ic{background:var(--warn)}
+  .callout.success{border-left-color:var(--ok);background:var(--ok-weak)}
+  .callout.success .ic{background:var(--ok)}
+  .callout.highlight{border-left-color:var(--violet);background:var(--violet-weak)}
+  .callout.highlight .ic{background:var(--violet)}
+  .callout.highlight .body strong{color:var(--violet-ink)}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field.full{grid-column:1 / -1}
+  .field label{display:block;font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  input[type=text],input[type=date],input:not([type]){width:100%;font:inherit;font-size:14px;color:var(--text);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 12px;background:var(--surface)}
+  input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  textarea{width:100%;font:inherit;font-size:14px;color:var(--text);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;background:var(--surface);resize:vertical;min-height:44px;overflow:hidden}
+  textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+
+  .lifecycle{font-size:13.5px;border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:var(--r-md);padding:12px 14px;margin-top:12px;background:var(--surface);color:var(--text)}
+  .lifecycle[data-s="ok"]{border-left-color:var(--ok);background:var(--ok-weak)}
+  .lifecycle[data-s="soon"]{border-left-color:var(--warn);background:var(--warn-weak)}
+  .lifecycle[data-s="overdue"]{border-left-color:var(--bad);background:var(--bad-weak)}
+  .lc-note{color:var(--faint);font-size:12.5px}
+
+  .levelq-label{font-weight:600;color:var(--ink);margin-bottom:8px}
+  .levelq{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .lopt{appearance:none;font:600 14px/1 var(--sans);border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:var(--r-sm);padding:10px 14px;cursor:pointer}
+  .lopt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .lopt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .fpgroup{margin:0 0 14px}
+  .fpgroup-h{font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
+  .fprow{display:flex;flex-wrap:wrap;gap:8px}
+  .fpitem{appearance:none;font:600 13px/1.2 var(--sans);text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:var(--r-pill);padding:9px 13px;cursor:pointer}
+  .fpitem:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .fpitem[aria-pressed="true"]{background:var(--accent-weak);border-color:var(--accent);color:var(--accent)}
+  .fpitem.cui[aria-pressed="true"]{background:var(--bad-weak);border-color:var(--bad);color:var(--bad-ink)}
+  .fp-item{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin:0 0 10px;background:var(--surface)}
+  .fp-item h5{margin:0 0 4px;font-size:14px;color:var(--ink);display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .fp-maps{flex:0 0 auto;font:600 10.5px/1 var(--mono);color:var(--accent);background:var(--accent-weak);border-radius:var(--r-pill);padding:4px 8px;letter-spacing:.04em}
+  .fp-item p{margin:4px 0;font-size:13.5px;color:var(--text)}
+  .fp-item .li{color:var(--muted);font-weight:600}
+  .fp-now{font-size:13.5px;color:var(--muted);margin:0 0 10px}
+
+  .famnav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;padding:0}
+  .navlbl{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);align-self:center}
+  .navchip{font:600 12px/1 var(--mono);text-decoration:none;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:7px 11px}
+  .navchip.done{color:var(--ok-ink);background:var(--ok-weak);border-color:var(--ok-line)}
+
+  .fam{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-1);margin:0 0 12px;overflow:hidden;scroll-margin-top:120px}
+  .fam>.fhead{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;font:inherit;cursor:pointer;padding:16px 18px}
+  .fam>.fhead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .fam .chev{flex:0 0 auto;width:10px;height:10px;border-right:2.5px solid var(--accent);border-bottom:2.5px solid var(--accent);transform:rotate(-45deg);transition:transform .18s ease}
+  .fam>.fhead[aria-expanded="true"] .chev{transform:rotate(45deg)}
+  .fam .fname{font-weight:650;color:var(--ink);font-size:16px}
+  .fam .fcode{font:600 11px/1 var(--mono);color:var(--faint);letter-spacing:.06em}
+  .fam .fcount{margin-left:auto;font:600 12px/1 var(--mono);color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-pill);padding:6px 10px}
+  .fam.done .fcount{color:var(--ok-ink);background:var(--ok-weak);border-color:var(--ok-line)}
+  .fbody{display:none;padding:0 18px 8px;border-top:1px solid var(--line)}
+  .fam.open .fbody{display:block}
+  .fam-bodytop{display:flex;justify-content:flex-end;padding:10px 0 0}
+
+  .practice{padding:16px 0;border-bottom:1px solid var(--line)}
+  .practice:last-child{border-bottom:0}
+  .p-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pid{font:600 11px/1 var(--mono);color:var(--accent);background:var(--accent-weak);border-radius:var(--r-pill);padding:5px 9px;letter-spacing:.04em}
+  .pname{font-weight:650;color:var(--ink)}
+  .finding{margin-left:auto;font:600 11px/1 var(--mono);padding:5px 9px;border-radius:var(--r-pill);background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+  .finding[data-f="met"]{background:var(--ok-weak);color:var(--ok-ink);border-color:var(--ok-line)}
+  .finding[data-f="notmet"]{background:var(--bad-weak);color:var(--bad-ink);border-color:var(--bad-line)}
+  .finding[data-f="attn"]{background:var(--warn-weak);color:var(--warn-ink);border-color:var(--warn-line)}
+
+  .stmt{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;margin:10px 0;font-size:14px}
+  .stmt .q{display:block;font:600 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .have{font-size:13.5px;color:var(--ok-ink);background:var(--ok-weak);border-left:3px solid var(--ok);border-radius:var(--r-sm);padding:9px 12px;margin:8px 0}
+  .refnote{font-size:13px;color:var(--warn-ink);background:var(--warn-weak);border-left:3px solid var(--warn);border-radius:var(--r-sm);padding:9px 12px;margin:8px 0}
+  .refnote a{color:var(--warn-ink)}
+  .psrc{font-size:12.5px;margin:6px 0 2px}
+  details.meanbox,details.tips{margin:8px 0;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+  details.meanbox>summary,details.tips>summary{cursor:pointer;padding:9px 12px;font:600 13px/1.2 var(--sans);color:var(--accent);list-style:none}
+  details>summary::-webkit-details-marker{display:none}
+  details.meanbox>div,details.tips>div{padding:0 12px 12px;font-size:13.5px;color:var(--text)}
+  .tipnote{color:var(--muted)}
+  .docblock{margin:10px 0 2px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--r-sm);background:var(--surface);padding:10px 12px 11px}
+  .docblock-h{font:700 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 4px}
+  .docblock p{font-size:13.5px;color:var(--text);margin:6px 0 0;line-height:1.5}
+  .card.defs p{margin:10px 0 0;font-size:14px;line-height:1.55;color:var(--text)}
+  .card.defs p:first-of-type{margin-top:4px}
+  .card.defs b{color:var(--ink)}
+  .defs-note{display:flex;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:14px;line-height:1.55;color:var(--text)}
+  .defs-note .mk{flex:0 0 auto;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-top:6px}
+
+  .obj{display:flex;gap:12px;padding:12px 0}
+  .obj+.obj{border-top:1px dashed var(--line)}
+  .oletter{flex:0 0 auto;width:22px;height:22px;border-radius:var(--r-pill);background:var(--bg);border:1px solid var(--line);font:600 11px/22px var(--mono);text-align:center;color:var(--muted)}
+  .ogrow{min-width:0;flex:1 1 auto}
+  .otext{font-size:14px}
+  .oplain{color:var(--muted);font-size:13px;margin-top:3px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin:8px 0 0}
+  .seg button{appearance:none;font:600 12px/1 var(--sans);border:0;background:var(--surface);color:var(--muted);padding:8px 12px;cursor:pointer;min-width:54px}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .seg button[aria-pressed="true"][data-v="met"]{background:var(--ok-weak);color:var(--ok-ink)}
+  .seg button[aria-pressed="true"][data-v="notmet"]{background:var(--bad-weak);color:var(--bad-ink)}
+  .seg button[aria-pressed="true"][data-v="na"]{background:var(--muted);color:#fff}
+  .onote{margin-top:8px;min-height:42px;font-size:13px}
+  .evidence{margin-top:12px}
+  .evidence label{display:block;font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .req{color:var(--bad-ink)}
+  .evhint{font-size:12.5px;color:var(--faint);margin-top:8px;line-height:1.6}
+  .p-foot{display:flex;justify-content:flex-end;margin-top:8px}
+
+  .ref-list{display:grid;gap:10px}
+  .ref-item{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+  .ref-item:last-child{border-bottom:0;padding-bottom:0}
+  .ref-item a{font-weight:600}
+  .ref-item .use{color:var(--muted);font-size:13.5px;grid-column:1 / -1}
+  #ahead .card-lead{margin:0 0 4px;font-size:14px;line-height:1.55;color:var(--text)}
+  #ahead .ah-item{border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;margin:12px 0 0;background:var(--surface)}
+  #ahead .ah-head strong{font-size:15px;color:var(--ink)}
+  #ahead .ah-map{margin-top:3px;font:600 11px/1.35 var(--mono);letter-spacing:.02em;color:var(--accent)}
+  #ahead .ah-desc{margin:8px 0 0;font-size:13.5px;line-height:1.55;color:var(--text)}
+  .seg button[aria-pressed="true"][data-v="planned"]{background:var(--accent-weak);color:var(--accent)}
+  .seg button[aria-pressed="true"][data-v="inprogress"]{background:var(--warn-weak);color:var(--warn-ink)}
+  .seg button[aria-pressed="true"][data-v="inplace"]{background:var(--ok-weak);color:var(--ok-ink)}
+  #ahead .ahead-include{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);font-size:13.5px;line-height:1.5;color:var(--text);cursor:pointer}
+  #ahead .ahead-include input{margin-top:2px;flex:0 0 auto;width:16px;height:16px;accent-color:var(--accent)}
+
+  footer{margin-top:28px;border-top:3px solid var(--accent);background:var(--surface)}
+  .foot{padding:26px 0;text-align:center}
+  .foot .brand{font-weight:800;font-size:17px;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:9px}
+  .foot-tag{margin:10px auto 0;max-width:78ch;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .foot-tag a{color:var(--accent);text-decoration:none;font-weight:600}
+  .foot-lic{margin:16px auto 0;padding-top:13px;border-top:1px solid var(--line);max-width:82ch;color:var(--faint);font-size:12px;line-height:1.6}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:var(--r-pill);font-size:13.5px;box-shadow:var(--sh-2);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:70}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  @media (max-width:560px){
+    header.hero h1{font-size:25px}
+    .vsub{display:none}
+  }
+  /* single-column form until there is room for two comfortable columns */
+  @media (max-width:680px){
+    .form-grid{grid-template-columns:1fr}
+  }
+  /* tablet: more comfortable gutters when content fills the viewport */
+  @media (min-width:561px) and (max-width:900px){
+    .wrap{padding:0 26px}
+    header.hero{padding:30px 0 16px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media print{
+    .topbar,.skip,.toast,.actions,.menu,.btn,.seg,.famnav,.chips{display:none!important}
+    .fam .fbody{display:block!important}
+    .fam{break-inside:avoid;box-shadow:none}
+    body{background:#fff}
+  }
+
+  /* ---- SSP document (print to PDF) ---- */
+  #sspDoc{display:none}
+  @media print{
+    body.ssp-print>*{display:none!important}
+    body.ssp-print #sspDoc{display:block!important}
+    @page{size:Letter;margin:0.8in}
+  }
+  #sspDoc{color:#16203A;font-family:var(--sans);font-size:10.5pt;line-height:1.45}
+  #sspDoc .ssp-cover{min-height:88vh;display:flex;flex-direction:column;justify-content:center;page-break-after:always}
+  #sspDoc .ssp-title{font-size:30pt;font-weight:800;margin:0 0 6pt;color:#0C1020;letter-spacing:-.01em}
+  #sspDoc .ssp-sub{font-size:13pt;color:#2233AA;font-weight:700;margin:0 0 26pt}
+  #sspDoc .ssp-org{font-size:19pt;font-weight:700;margin:0 0 18pt;color:#1E2D5A}
+  #sspDoc .ssp-fp{font-size:8.5pt;color:#5A6478;margin:16pt 0 0}
+  #sspDoc h2.ssp-h{font-size:15pt;color:#1E2D5A;border-bottom:2px solid #2233AA;padding-bottom:4pt;margin:20pt 0 8pt;page-break-after:avoid}
+  #sspDoc h3.ssp-fam{font-size:12.5pt;color:#2233AA;margin:14pt 0 6pt;page-break-after:avoid}
+  #sspDoc .ssp-ctrl{page-break-inside:avoid;margin:0 0 10pt;border:1px solid #E2E8F0;border-radius:6pt;padding:8pt 10pt}
+  #sspDoc .ssp-ctrl h4{font-size:11.5pt;margin:0 0 5pt;display:flex;gap:8pt;align-items:baseline;flex-wrap:wrap}
+  #sspDoc .ssp-ctrl .pid{font:700 9.5pt var(--mono);color:#2233AA}
+  #sspDoc .ssp-req{font-size:10pt;margin:0 0 6pt}
+  #sspDoc .ssp-req b{color:#1E2D5A}
+  #sspDoc table.ssp-t{width:100%;border-collapse:collapse;margin:6pt 0;font-size:9pt}
+  #sspDoc table.ssp-t th,#sspDoc table.ssp-t td{border:1px solid #D0D7E2;padding:4pt 6pt;text-align:left;vertical-align:top}
+  #sspDoc table.ssp-t th{background:#EEF2FA;color:#1E2D5A;font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em}
+  #sspDoc .kv{width:100%;border-collapse:collapse;margin:10pt 0}
+  #sspDoc .kv td{border:1px solid #D0D7E2;padding:6pt 9pt;font-size:10pt}
+  #sspDoc .kv td.k{background:#F4F7FC;font-weight:700;width:34%;color:#1E2D5A}
+  #sspDoc .badge{display:inline-block;font:700 8.5pt var(--mono);padding:2pt 8pt;border-radius:999px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #sspDoc .b-met{background:#E7F7F0;color:#047857}
+  #sspDoc .b-notmet{background:#FCEBEB;color:#B91C1C}
+  #sspDoc .b-attn{background:#FCF1DD;color:#B45309}
+  #sspDoc .b-na{background:#EEF1F6;color:#5A6478}
+  #sspDoc .b-prog{background:#E8F0FE;color:#2233AA}
+  #sspDoc .ssp-note{font-size:8.5pt;color:#5A6478;margin-top:6pt}
+  #sspDoc .ssp-ev{font-size:9.5pt;margin:4pt 0 0}
+  #sspDoc .sig td{border:0;padding:14pt 0 0;font-size:10.5pt}
+  #sspDoc th,#sspDoc td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #sspDoc .ssp-src{font-size:8pt;color:#5A6478;margin:5pt 0 0}
+  #sspDoc .ssp-src a{color:#2233AA;text-decoration:none}
+  #sspDoc .ssp-sources{margin:6pt 0;font-size:9pt}
+  #sspDoc .ssp-sources li{margin:3pt 0}
+  #sspDoc .ssp-sources a{color:#2233AA;text-decoration:none}
+
+  /* how-to, callout lists */
+  details.howto{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);margin:0 0 14px;overflow:hidden}
+  details.howto>summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px}
+  details.howto>summary::-webkit-details-marker{display:none}
+  details.howto>summary::before{content:"";width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--accent),var(--violet));flex:0 0 auto}
+  details.howto>summary::after{content:"Show";margin-left:auto;font:600 11px/1 var(--mono);color:var(--accent)}
+  details.howto[open]>summary::after{content:"Hide"}
+  details.howto[open]>summary{border-bottom:1px solid var(--line)}
+  .howto-body{padding:12px 16px 14px}
+  .howto-body ol{margin:0;padding-left:20px}
+  .howto-lead{margin:0 0 10px;font-size:14px;line-height:1.55;color:var(--text)}
+  .howto-body li{margin:6px 0;font-size:14px;line-height:1.5}
+  .howto-note{margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+  .callout .body ul{margin:8px 0 0;padding-left:18px}
+  .callout .body li{margin:5px 0;color:var(--text);font-size:14px;line-height:1.5}
+  /* brand mark */
+  .brandmark{display:flex;align-items:center;gap:11px;margin-bottom:2px}
+  .brandmark .bmk{width:34px;height:34px;flex:0 0 auto}
+  .foot .blogo{width:22px;height:22px;display:block;flex:0 0 auto}
+  #sspDoc .ssp-lockup{display:flex;align-items:center;gap:9pt;margin:0 0 20pt}
+  #sspDoc .ssp-lockup img{width:30pt;height:30pt}
+  #sspDoc .ssp-lockup .lk{font:700 11pt/1.2 var(--sans);color:#1E2D5A}
+  #sspDoc .ssp-lockup .lk small{display:block;font-weight:600;color:#5A6478;font-size:8.5pt;margin-top:2pt}
+  #sspDoc .ssp-credit{font-size:8.5pt;color:#5A6478;margin:16pt 0 0;display:flex;align-items:center;gap:7pt}
+  #sspDoc .ssp-credit img{width:16pt;height:16pt}
+  #sspDoc .ssp-owner{font-size:20pt;font-weight:800;color:#0C1020;margin:0 0 4pt}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="topbar" id="progwrap">
+  <div class="progress" id="progress" role="progressbar" aria-label="Objectives resolved" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="bar"></span></div>
+  <div class="wrap">
+    <div class="status">
+      <span class="count" id="countText">0 of 59 objectives met</span>
+      <span class="pct" id="pctText">0%</span>
+      <span class="evb" id="evbText"></span>
+      <span class="vstatus" id="vstatus" aria-live="polite">Not assessed yet</span>
+    </div>
+    <div class="vsub" id="vSub">Mark each objective below. Level 1 is pass or fail: every applicable practice must be fully met.</div>
+    <div class="actions">
+      <div class="group">
+        <div class="menu">
+          <button class="btn" id="navBtn" aria-haspopup="true" aria-expanded="false" onclick="toggleMenu('nav')">Sections <i class="car"></i></button>
+          <div class="sheet" role="menu" id="navMenu" hidden>
+            <a class="item" role="menuitem" href="#overview" onclick="return jumpTo('overview')">Overview and your details</a>
+            <a class="item" role="menuitem" href="#scope" onclick="return jumpTo('scope')">Scope and footprint</a>
+            <a class="item" role="menuitem" href="#audit" onclick="return jumpTo('audit')">Audit: the 59 objectives</a>
+            <a class="item" role="menuitem" href="#ahead" onclick="return jumpTo('ahead')">Looking ahead (optional)</a>
+            <a class="item" role="menuitem" href="#reference" onclick="return jumpTo('reference')">Reference</a>
+          </div>
+        </div>
+        <div class="menu">
+          <button class="btn" id="repBtn" aria-haspopup="true" aria-expanded="false" onclick="toggleMenu('rep')">Reports <i class="car"></i></button>
+          <div class="sheet" role="menu" id="repMenu" data-align="right" hidden>
+            <button class="item" role="menuitem" onclick="downloadDocx()">Download SSP (Word)</button>
+            <button class="item" role="menuitem" onclick="printSSP()">Print SSP (PDF)</button>
+            <button class="item" role="menuitem" onclick="exportCSV()">Export CSV</button>
+            <button class="item" role="menuitem" onclick="gapReport()">Copy gap report</button>
+            <button class="item" role="menuitem" onclick="copyAll()">Copy SSP as text</button>
+            <button class="item" role="menuitem" onclick="openDiff()">Compare two saves</button>
+          </div>
+        </div>
+      </div>
+      <span class="spacer"></span>
+      <div class="group">
+        <span class="savehint" id="saveHint"></span>
+        <button class="btn primary" onclick="saveJSON()">Save</button>
+        <button class="btn" onclick="document.getElementById('file').click()">Load</button>
+        <button class="btn ghost" onclick="resetAll()">Reset</button>
+        <input type="file" id="file" accept="application/json" class="sr" aria-hidden="true" onchange="loadJSON(event)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brandmark"><img class="bmk blogo" alt="BluVi"><span class="kicker">CMMC for SMBs</span></div>
+    <h1>Level 1 self-assessment</h1>
+    <p class="lede">A plain-English walk through the 15 basic safeguards a small defense contractor must meet, broken into the 59 objectives the rule actually grades, so you can scope it right and avoid paying for what you do not need.</p>
+    <div class="chips">
+      <span class="chip">17 practices, 59 objectives</span>
+      <span class="chip">6 control families</span>
+      <span class="chip">Runs offline</span>
+      <span class="chip">Free and open source</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <section id="overview">
+    <div class="sec-h"><h2><button class="sec-toggle" aria-expanded="true" onclick="toggleSection('overview')"><span class="chev" aria-hidden="true"></span>Overview</button></h2><span class="tag">your details and how this works</span></div>
+    <details class="howto" open>
+      <summary>How this works</summary>
+      <div class="howto-body">
+        <p class="howto-lead">Independent and educational. Not affiliated with or endorsed by the Department of Defense (DoD, now also titled the Department of War, or DoW), the Cyber AB, or ISACA. It does not perform or replace a certified assessment, and using it does not affirm CMMC status in SPRS.</p>
+        <p class="howto-lead">It is not meant to replace expertise. It is here to help small and medium businesses cut the overall cost of reaching CMMC. Use it on your own, share it across a team, or run it alongside a paid support service. If you are ever unsure, a CMMC professional can be hired by the hour, like a lawyer, and this tool does not replace that help when your organization needs it.</p>
+        <ol>
+          <li><strong>Set your scope.</strong> In the Scope section, say whether you handle FCI or CUI, then map where your data lives. Shrinking that footprint is the biggest money saver.</li>
+          <li><strong>Work the 59 objectives.</strong> For each one, tap Met, Not met, or N/A, add a short note on how, and record your evidence.</li>
+          <li><strong>Watch the readiness bar.</strong> The top of the page tracks progress. Level 1 is pass or fail, so every applicable objective has to be Met.</li>
+          <li><strong>Export when ready.</strong> From Reports, generate your System Security Plan as Word or PDF, or a CSV for tracking.</li>
+          <li><strong>Save to resume, version, or hand off.</strong> Save writes a small, date- and time-stamped file of your answers. Keep each one as a version, or hand it to a teammate or advisor who can Load it and continue, recorded as the updater.</li>
+        </ol>
+        <p class="howto-note">Nothing you type leaves your device. This page is the tool; the saved file is just your answers, so you can stop and continue later or hand it to a teammate.</p>
+      </div>
+    </details>
+
+    <div class="callout info">
+      <span class="ic" aria-hidden="true">i</span>
+      <div class="body"><p><strong>Start here.</strong> Level 1 is the 15 safeguards in FAR 52.204-21 (renumbered FAR 52.240-93 in the 2026 FAR overhaul; the same 15 controls), and the rule grades them as 59 yes-or-no objectives. A practice counts as met only when every one of its objectives is met. You assess yourself once a year and affirm in SPRS. No outside auditor is required at this level.</p></div>
+    </div>
+
+    <div class="callout highlight">
+      <span class="ic" aria-hidden="true">$</span>
+      <div class="body"><p><strong>Where small businesses overpay.</strong> Level 1 does not assess IoT, operational technology, government-furnished equipment, test equipment, or restricted information systems. They are out of scope. The other big lever is your footprint: every system FCI touches has to meet all 17 practices, so shrinking what touches FCI shrinks the whole job. Map it in the Scope section before you get a quote.</p></div>
+    </div>
+
+    <div class="callout warn">
+      <span class="ic" aria-hidden="true">!</span>
+      <div class="body"><p><strong>If you handle CUI, Level 1 is not your whole assessment.</strong> CUI pulls you up to Level 2 and usually a third-party C3PAO. Level 1 is still the foundation Level 2 builds on (the 17 practices here are a subset of the 110 at Level 2), so this is a useful starting point, not a substitute. This is not anti-consultant either: use it before or alongside paid help so you are not over-scoped.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Your details</h3>
+      <p class="muted" style="font-size:13.5px">Used to label your SSP draft, gap report, and CSV. Stored only in your saved file, never sent anywhere.</p>
+      <div class="form-grid">
+        <div class="field full"><label for="org_company">Organization</label><input id="org_company" type="text" placeholder="Company name"></div>
+        <div class="field"><label for="org_system">System or enclave assessed</label><input id="org_system" type="text" placeholder="For example, a corporate network that handles FCI"></div>
+        <div class="field"><label for="org_by">Prepared by</label><input id="org_by" type="text" placeholder="Your name and role"></div>
+        <div class="field"><label for="org_date">Assessment date</label><input id="org_date" type="date" oninput="updateLifecycle()"></div>
+        <div class="field"><label for="org_official">Senior official affirming in SPRS</label><input id="org_official" type="text" placeholder="Name and title"></div>
+        <div class="field"><label for="org_updatedby">Updated by (for passing the file between people)</label><input id="org_updatedby" type="text" placeholder="Whoever is editing now"></div>
+        <div class="field full"><label for="org_advisor">Advisor notes for the gap report (optional)</label><textarea id="org_advisor" rows="2" placeholder="Only if a consultant or Registered Practitioner is helping. Overall recommendations go here."></textarea>
+          <div class="evhint">Leave blank if you are doing this yourself. Anything here appears in the gap report export, kept separate from the company's own answers. It does not appear in the SSP draft or in SPRS.</div></div>
+      </div>
+      <div class="lifecycle" id="lifecycle" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="scope" class="collapsed">
+    <div class="sec-h"><h2><button class="sec-toggle" aria-expanded="false" onclick="toggleSection('scope')"><span class="chev" aria-hidden="true"></span>Scope and footprint</button></h2><span class="tag">do this before the audit</span></div>
+    <div class="card">
+      <h3>First, are you even Level 1?</h3>
+      <div id="levelBox"></div>
+    </div>
+    <div class="card defs">
+      <h3>What is FCI? What is CUI?</h3>
+      <p><b>FCI, Federal Contract Information.</b> Information provided by or generated for the government under a contract that is not meant for public release, such as nonpublic contract details, schedules, or deliverables. If FCI is the most sensitive thing you hold, you are <b>Level 1</b>, and this is the right tool.</p>
+      <p><b>CUI, Controlled Unclassified Information.</b> Information that a law, regulation, or government-wide policy requires you to safeguard. Holding CUI puts you at <b>Level 2</b>, not Level 1. Common examples for a contractor: CAD, engineering, or technical data (CTI); export-controlled data (ITAR or EAR); proposal, bid, or source-selection information; or anything your contract marks CUI, so look for DFARS 252.204-7012.</p>
+      <p class="defs-note"><span class="mk" aria-hidden="true"></span><span>The government decides what is CUI, through your contract and the markings on what you receive. The full list is the <a href="https://www.archives.gov/cui/registry/category-list" target="_blank" rel="noopener noreferrer">federal CUI Registry</a>. If any apply, this tool is useful groundwork, but it is not your Level 2 assessment.</span></p>
+    </div>
+    <div class="card">
+      <h3>Map your footprint, then shrink it</h3>
+      <p class="muted">Tap every place FCI lives today. Anywhere FCI is stored, processed, or transmitted is in scope, and each pick maps to the Level 1 practices it triggers. This is a common list, not an exhaustive one.</p>
+      <div id="fpGrid"></div>
+      <div id="fpResult"></div>
+      <div class="field full" style="margin-top:14px"><label for="scopeNotes">Your scope statement</label>
+        <textarea id="scopeNotes" rows="2" placeholder="For example: FCI lives only in the 'Gov Contracts' SharePoint site and on three project laptops; general business systems do not handle FCI and are out of scope." oninput="scopeState.notes=this.value"></textarea></div>
+    </div>
+  </section>
+
+  <section id="audit" class="collapsed">
+    <div class="sec-h"><h2><button class="sec-toggle" aria-expanded="false" onclick="toggleSection('audit')"><span class="chev" aria-hidden="true"></span>Audit</button></h2><span class="tag">a practice is met only when all its objectives are met</span></div>
+    <nav class="famnav" id="famNav" aria-label="Jump to a control family"></nav>
+    <div class="callout info"><span class="ic" aria-hidden="true">i</span><div class="body"><p><strong>A tool cannot make the judgment calls for you.</strong> If you are unsure whether something truly counts as Met, whether your evidence is enough, or even whether you hold FCI versus CUI, that is a question for a person, not a checkbox. This tool does not warrant or guarantee CMMC approval, and it does not replace professional services your organization may need. It exists to help small and medium businesses make informed decisions, with plain-English explanations of the terms and requirements, and to reduce costs where you can do the work yourself. A CMMC professional can be hired by the hour, the way you would a lawyer, or kept on for ongoing support.</p></div></div>
+    <p class="audit-src">Objective wording is quoted verbatim from the <a href="https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1v2.pdf" target="_blank" rel="noopener noreferrer">DoD CMMC Level 1 Assessment Guide</a> (Version 2.13), the source of record. Verify any line there.</p>
+    <div id="families"></div>
+  </section>
+
+  <section id="ahead" class="collapsed">
+    <div class="sec-h"><h2><button class="sec-toggle" aria-expanded="false" onclick="toggleSection('ahead')"><span class="chev" aria-hidden="true"></span>Looking ahead</button></h2><span class="tag">optional &middot; planning</span></div>
+    <div class="callout highlight"><span class="ic" aria-hidden="true">+</span><div class="body"><p><strong>Not required for Level 1.</strong> If you only handle FCI and have no plans for Level 2, you can skip this section. It is here for companies that expect to handle CUI down the road, or that are using this Level 1 assessment as a first step toward a Level 2 certification.</p></div></div>
+    <label class="ahead-include"><input type="checkbox" id="ahead_include" onchange="scopeState.includeAhead=this.checked;markDirty();"> <span>Include this roadmap as an appendix in my exported reports (Word, PDF, and copied text). Off by default, so it never lands in your Level 1 record unless you choose to add it.</span></label>
+    <div class="card">
+      <h3>Three cheap habits that map to Revision 3</h3>
+      <p class="card-lead">These cost little to start now and line up with where NIST SP 800-171 is heading in Revision 3, so starting early means less to retrofit later. Track each one below; if the report box above is checked, your status and notes ride along as an appendix.</p>
+      <div id="aheadList"></div>
+    </div>
+    <div class="card">
+      <h3>Why Revision 2, not Revision 3</h3>
+      <p class="card-lead">CMMC is still assessed against NIST SP 800-171 Revision 2 today. Revision 3 is the newer version, and it is not yet required for CMMC. When you open the Revision 2 page at NIST, you will see a banner saying it was withdrawn and superseded by Revision 3. That is NIST's catalog housekeeping, not a CMMC change: the CMMC rule (32 CFR Part 170) still points to Revision 2, so it remains the correct baseline for your assessment.</p>
+      <div class="ref-list">
+        <div class="ref-item"><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank" rel="noopener noreferrer">NIST SP 800-171 Rev 2</a><span class="use">The CMMC baseline today. The "withdrawn" banner on this page is expected; Revision 2 is still what CMMC uses.</span></div>
+        <div class="ref-item"><a href="https://csrc.nist.gov/pubs/sp/800/171/r3/final" target="_blank" rel="noopener noreferrer">NIST SP 800-171 Rev 3</a><span class="use">The newer version. Not required for CMMC yet, but where the program is expected to head.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reference" class="collapsed">
+    <div class="sec-h"><h2><button class="sec-toggle" aria-expanded="false" onclick="toggleSection('reference')"><span class="chev" aria-hidden="true"></span>Reference</button></h2><span class="tag">official sources</span></div>
+    <div class="callout highlight"><span class="ic" aria-hidden="true">+</span><div class="body"><p><strong>The deeper explainers live in the education library.</strong> How SPRS scoring works, the enclave decision, honest cost ranges, and the consultant red flags to watch for are covered there in plain English, kept separate so they do not crowd this tool.</p></div></div>
+    <div class="card">
+      <h3>Go to the source</h3>
+      <div class="ref-list">
+        <div class="ref-item"><a href="https://dodcio.defense.gov/Portals/0/Documents/CMMC/ScopingGuideL1v2.pdf" target="_blank" rel="noopener noreferrer">CMMC Level 1 Scoping Guide</a><span class="use">Read before mapping your footprint. Tells you what counts and what can be carved out.</span></div>
+        <div class="ref-item"><a href="https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1v2.pdf" target="_blank" rel="noopener noreferrer">CMMC Level 1 Assessment Guide</a><span class="use">The 59 objectives, the a, b, c sub-items behind each practice. The objective wording in this tool is quoted from this guide (Version 2.13); open it to verify any line.</span></div>
+        <div class="ref-item"><a href="https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21" target="_blank" rel="noopener noreferrer">FAR 52.204-21</a><span class="use">The 15 safeguarding requirements themselves. The 2026 FAR overhaul renumbered this clause to FAR 52.240-93 for solicitations issued after February 1, 2026; older contracts still cite 52.204-21, the 15 requirements are unchanged, and CMMC's own rule still points to 52.204-21.</span></div>
+        <div class="ref-item"><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank" rel="noopener noreferrer">NIST SP 800-171 Rev 2</a><span class="use">The control set Level 1's basics map to, and the Level 2 baseline. CMMC uses Revision 2; the "withdrawn" banner on NIST's page is expected, since NIST moved on to Rev 3 while CMMC has not.</span></div>
+        <div class="ref-item"><a href="https://csrc.nist.gov/pubs/sp/800/171/r3/final" target="_blank" rel="noopener noreferrer">NIST SP 800-171 Rev 3</a><span class="use">The newer revision. Not required for CMMC yet; the Looking ahead section covers what it changes.</span></div>
+        <div class="ref-item"><a href="https://www.ecfr.gov/current/title-32/part-170" target="_blank" rel="noopener noreferrer">32 CFR Part 170</a><span class="use">The CMMC program rule, effective December 2024. Naming note: Executive Order 14347 (September 2025) authorized "Department of War" (DoW) as a secondary title for the Department of Defense. The statutory name remains Department of Defense, which is what this rule, the FAR and DFARS clauses, and SPRS use, so this tool uses DoD. Legislation to make the change permanent was pending as of 2026.</span></div>
+        <div class="ref-item"><a href="https://sprs.csd.disa.mil/" target="_blank" rel="noopener noreferrer">SPRS</a><span class="use">Where you post your Level 1 result and your senior official affirms it.</span></div>
+        <div class="ref-item"><a href="https://www.archives.gov/cui/registry/category-list" target="_blank" rel="noopener noreferrer">NARA CUI Registry (category list)</a><span class="use">The authoritative list of what is CUI. Check it if you are unsure whether what you hold makes you Level 2.</span></div>
+        <div class="ref-item"><a href="https://csrc.nist.gov/pubs/sp/800/88/r1/final" target="_blank" rel="noopener noreferrer">NIST SP 800-88</a><span class="use">How to sanitize media before disposal (practice MP.L1-3.8.3).</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Free and low-cost help</h3>
+      <div class="ref-list">
+        <div class="ref-item"><a href="https://projectspectrum.io/" target="_blank" rel="noopener noreferrer">Project Spectrum</a><span class="use">DoD-sponsored readiness resources for small contractors.</span></div>
+        <div class="ref-item"><a href="https://www.nist.gov/itl/smallbusinesscyber" target="_blank" rel="noopener noreferrer">NIST Small Business Cybersecurity Corner</a><span class="use">Plain guidance and templates.</span></div>
+        <div class="ref-item"><a href="https://www.cisa.gov/resources-tools/resources/cyber-essentials" target="_blank" rel="noopener noreferrer">CISA Cyber Essentials</a><span class="use">A starter roadmap whose habits also satisfy Level 1 practices.</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="sspDoc" aria-hidden="true"></div>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand"><img class="blogo" alt="BluVi"> CMMC for SMBs</div>
+    <p class="foot-tag">Free, open-source CMMC self-assessment and readiness tool for small &amp; medium-sized companies, maintained by <a href="https://bluvi.ai" target="_blank" rel="noopener noreferrer">BluVi LLC</a> at <a href="https://github.com/bluvibytes/CMMC-for-SMBs" target="_blank" rel="noopener noreferrer">CMMC for SMBs</a>.</p>
+    <p class="foot-lic">Code under Apache-2.0. Content under CC BY 4.0. Current as of June 2026. Verify against the official sources linked above.</p>
+  </div>
+</footer>
+
+<div class="diff-overlay" id="diffOverlay" hidden role="dialog" aria-modal="true" aria-label="Compare two saved files" onclick="if(event.target===this)closeDiff()">
+  <div class="diff-modal">
+    <div class="diff-head"><h2>Compare two saves</h2><button class="btn ghost" onclick="closeDiff()">Close</button></div>
+    <p class="diff-intro">Load two saved assessment files to see exactly what changed between them. This does not touch your current work.</p>
+    <div class="diff-pickers">
+      <label class="diff-pick">Baseline (older)<input type="file" accept="application/json,.json" id="diffFileA" onchange="loadDiffFile('A',event)"></label>
+      <label class="diff-pick">Compared (newer)<input type="file" accept="application/json,.json" id="diffFileB" onchange="loadDiffFile('B',event)"></label>
+    </div>
+    <div class="diff-out" id="diffOut"><p class="diff-empty">Choose two files to compare.</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<script>
+/* ---- 59 objectives: official text + plain-language, verbatim from the prior build ---- */
+const FAMILIES=[
+ {abbrev:"AC",name:"Access Control",practices:[
+  {id:"AC.L1-3.1.1",name:"Authorized Access Control",
+   stmt:"Limit information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).",
+   have:"You use individual logins (Microsoft 365 / Active Directory / Google Workspace) and don't share one admin password across staff.",
+   ev:"A short written access policy that says who is allowed on your systems and devices and how access is granted and removed, plus your current user list and device inventory as proof you follow it.",
+   fix:"Write a one-page policy: everyone gets their own login, list who may access what, and cover how you add and remove people. Keep a current user and device list and review it whenever staff change.",
+   obj:[
+    ["a","authorized users are identified","You keep a list of who is allowed on your systems."],
+    ["b","processes acting on behalf of authorized users are identified","Automated tasks and service accounts (scripts, scheduled jobs) are tied to a known owner."],
+    ["c","devices (and other systems) authorized to connect to the system are identified","You know which devices (PCs, printers, phones) are allowed on the network."],
+    ["d","system access is limited to authorized users","Only people on that list can actually get in."],
+    ["e","system access is limited to processes acting on behalf of authorized users","Only approved automated processes can run or connect."],
+    ["f","system access is limited to authorized devices (including other systems)","Only approved devices can connect."]]},
+  {id:"AC.L1-3.1.2",name:"Transaction & Function Control",
+   stmt:"Limit information system access to the types of transactions and functions that authorized users are permitted to execute.",
+   have:"You use role/group-based permissions and limit admin rights to a small number of people.",
+   ev:"A written note of what each role is allowed to do (least privilege), plus a screenshot of your permission groups and a list of who holds administrator rights.",
+   fix:"Decide what each role needs, write it down, and set permissions to match. Take admin rights away from anyone who does not need them for daily work.",
+   mean:"This is <b>least privilege</b>: people should only be able to do what their job needs, not everything. In a small business that usually means not everyone is an administrator, and staff cannot change settings, wipe records, or open areas they do not need. Decide what each role may do, then set permissions to match.",
+   obj:[
+    ["a","the types of transactions and functions that authorized users are permitted to execute are defined","You've decided what each role is allowed to do."],
+    ["b","system access is limited to the defined types of transactions and functions for authorized users","People can only do what their role allows, so least privilege is enforced."]]},
+  {id:"AC.L1-3.1.20",name:"External Connections",
+   stmt:"Verify and control/limit connections to and use of external information systems.",
+   have:"Remote staff connect through a managed VPN or Conditional Access, and you control which cloud services are allowed.",
+   ev:"A written list of approved outside systems and cloud services with the rules for connecting (for example, company-managed devices only), plus your VPN, Conditional Access, or firewall settings as proof.",
+   fix:"List the outside systems and services allowed to touch your work, write down the rules, and block the rest. Handle FCI on managed devices, not personal ones.",
+   mean:"An <b>external system</b> is anything outside your control, such as a personal phone or home PC, a partner network, public Wi-Fi, or a cloud service you do not manage. This asks you to know which outside connections and services touch your work, confirm they are legitimate, and limit them, instead of letting anything connect. Example: deciding FCI is only handled on managed company devices and approved cloud apps, not personal laptops.",
+   obj:[
+    ["a","connections to external systems are identified","You know what outside systems your environment connects to."],
+    ["b","the use of external systems is identified","You know which outside systems your people use for work (e.g., cloud apps)."],
+    ["c","connections to external systems are verified","You confirm those connections are legitimate before trusting them."],
+    ["d","the use of external systems is verified","You confirm the external systems being used are approved and trustworthy."],
+    ["e","connections to external systems are controlled/limited","You restrict those connections (firewall rules, allow-lists, VPN)."],
+    ["f","the use of external systems is controlled/limited","You limit how and when staff use external systems (company laptops only, approved cloud only)."]]},
+  {id:"AC.L1-3.1.22",name:"Control Public Information",
+   stmt:"Control information posted or processed on publicly accessible information systems.",
+   have:"Someone owns/approves website content and you don't post customer or contract files publicly.",
+   ev:"A written rule that FCI is never posted publicly, naming who approves public content and how it is reviewed, plus a record showing the review happens.",
+   fix:"Name one person to approve anything posted publicly, write the review step down, and check your website and social accounts so no contract information slips out.",
+   mean:"This keeps FCI off anything the public can see, such as your website, social media, or a public file share. In practice: someone owns and reviews what gets posted publicly, and there is a way to catch and pull down FCI if it ever gets posted by mistake.",
+   obj:[
+    ["a","individuals authorized to post or process information on publicly accessible systems are identified","You know who is allowed to put content on public systems like the website."],
+    ["b","procedures to ensure FCI is not posted or processed on publicly accessible systems are identified","You have a rule that FCI never goes on public systems."],
+    ["c","a review process is in place prior to posting of any content to publicly accessible systems","Content is reviewed before it goes public."],
+    ["d","content on publicly accessible systems is reviewed to ensure that it does not include FCI","Someone checks public content to confirm no FCI slipped in."],
+    ["e","mechanisms are in place to remove and address improper posting of FCI","If FCI does get posted, you have a way to take it down and respond."]]}]},
+ {abbrev:"IA",name:"Identification & Authentication",practices:[
+  {id:"IA.L1-3.5.1",name:"Identification",
+   stmt:"Identify information system users, processes acting on behalf of users, or devices.",
+   have:"Each employee has their own named account in M365 / AD / Workspace.",
+   ev:"A user list showing every person has a unique account with no shared logins, referenced in your access policy.",
+   fix:"Give each person their own account and stop using shared or generic logins. Note this rule in your access policy.",
+   obj:[
+    ["a","system users are identified","Every person has a unique ID / username."],
+    ["b","processes acting on behalf of users are identified","Automated processes and service accounts have identifiers."],
+    ["c","devices accessing the system are identified","Devices on the network have identifiers."]]},
+  {id:"IA.L1-3.5.2",name:"Authentication",
+   stmt:"Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.",
+   have:"MFA is turned on for Microsoft 365 / Google and for VPN / remote logins, and default passwords are changed.",
+   ev:"A written authentication standard (your password rules and where multi-factor authentication is required), plus a screenshot showing MFA turned on and default passwords changed.",
+   fix:"Turn on multi-factor authentication (MFA) for email and remote access. It is included free in Microsoft 365 and Google Workspace. Require it in writing and change any default passwords.",
+   obj:[
+    ["a","the identity of each user is authenticated or verified as a prerequisite to system access","Each user proves who they are (password / MFA) before getting in."],
+    ["b","the identity of each process acting on behalf of a user is authenticated or verified as a prerequisite to system access","Automated processes prove their identity before access (credentials, certs)."],
+    ["c","the identity of each device accessing or connecting to the system is authenticated or verified as a prerequisite to system access","Devices prove their identity before connecting."]]}]},
+ {abbrev:"MP",name:"Media Protection",practices:[
+  {id:"MP.L1-3.8.3",name:"Media Disposal",
+   stmt:"Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.",
+   have:"You already wipe or destroy old computers and drives and shred sensitive paper instead of tossing them.",
+   ev:"A written media sanitization procedure that follows NIST SP 800-88, plus a log of what was wiped or destroyed, by whom, when, and how. Keep any certificates of destruction.",
+   fix:"Follow NIST SP 800-88 for sanitizing media: for hard drives a single full overwrite is generally enough, for solid state drives use the maker's secure erase or encrypt the drive and destroy the key, and physically destroy anything you discard. Shred paper. Write the procedure down and log each disposal. <a href='https://csrc.nist.gov/pubs/sp/800/88/r1/final' target='_blank' rel='noopener noreferrer'>NIST SP 800-88 (Media Sanitization)</a>",
+   mean:"Before you throw out, donate, sell, or recycle anything that held FCI (a computer, hard drive, USB stick, phone, even paper), make the FCI unrecoverable first: wipe or physically destroy drives, and shred paper. A simple delete or quick format does not truly remove data from a drive.",
+   obj:[
+    ["a","system media containing FCI is sanitized or destroyed before disposal","Drives, disks, USBs, and paper with FCI are wiped or destroyed before you throw them out."],
+    ["b","system media containing FCI is sanitized before it is released for reuse","They're wiped before you hand a device to someone else."]]}]},
+ {abbrev:"PE",name:"Physical Protection",practices:[
+  {id:"PE.L1-3.10.1",name:"Limit Physical Access",
+   stmt:"Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.",
+   have:"Your office and any server / network closet are locked and not open to the public.",
+   ev:"A note of which areas hold systems and network gear and who may enter, plus proof those areas are secured (a description of the locks or access controls, or a photo).",
+   fix:"Lock the room or cabinet that holds network gear, write down who is allowed in, and limit keys to those people.",
+   obj:[
+    ["a","authorized individuals allowed physical access are identified","You have a list of who's allowed physical access."],
+    ["b","physical access to organizational systems is limited to authorized individuals","Only those people can physically reach your systems."],
+    ["c","physical access to equipment is limited to authorized individuals","Only authorized people can reach equipment (servers, network gear)."],
+    ["d","physical access to operating environments is limited to authorized individuals","Only authorized people can enter the areas where systems run."]]},
+  {id:"PE.L1-3.10.3",name:"Escort Visitors",
+   stmt:"Escort visitors and monitor visitor activity.",
+   have:"Guests are signed in and escorted rather than roaming freely.",
+   ev:"A short written visitor rule (guests sign in and are escorted), plus your visitor log as proof it happens.",
+   fix:"Write a short visitor rule (sign in, stay with a staff member) and follow it. No cost.",
+   obj:[
+    ["a","visitors are escorted","Guests are walked through and not left alone."],
+    ["b","visitor activity is monitored","You keep an eye on what visitors do (accompaniment, cameras, badge logs)."]]},
+  {id:"PE.L1-3.10.4",name:"Physical Access Logs",
+   stmt:"Maintain audit logs of physical access.",
+   have:"You keep a visitor sign-in sheet or badge-access logs.",
+   ev:"Your visitor logs (sign-in sheets or badge logs) plus a written note of how long you keep them and where. Scan paper sheets so they are not lost.",
+   fix:"Keep a visitor log on paper or electronically. Decide and write down how long you retain it, store it somewhere safe, and scan paper sheets so you have a backup copy.",
+   obj:[
+    ["a","audit logs of physical access are maintained","You keep a record of who came and went, such as a sign-in sheet or badge log."]]},
+  {id:"PE.L1-3.10.5",name:"Manage Physical Access Devices",
+   stmt:"Control and manage physical access devices.",
+   have:"You keep track of office keys and badges and retrieve them when people leave.",
+   ev:"A list of issued keys, badges, and fobs showing who holds each, plus a note on collecting them when people leave.",
+   fix:"Track who holds each key and badge, and collect them when someone leaves or changes roles. A simple spreadsheet works.",
+   obj:[
+    ["a","physical access devices are identified","You know what keys, badges, and fobs exist."],
+    ["b","physical access devices are controlled","Access to those keys/badges is restricted to the right people."],
+    ["c","physical access devices are managed","You track issuance and collect them back when people leave or change roles."]]}]},
+ {abbrev:"SC",name:"System & Communications Protection",practices:[
+  {id:"SC.L1-3.13.1",name:"Boundary Protection",
+   stmt:"Monitor, control, and protect organizational communications at the external boundaries and key internal boundaries of the information systems.",
+   have:"You run a business firewall and don't expose internal systems directly to the internet.",
+   ev:"A short written description of your network boundary (where your network meets the internet) plus your firewall configuration or rule list, exported or screenshotted, showing it blocks by default. A photo of the device alone is not enough; a reviewer wants to see the settings.",
+   fix:"Document where your network meets the internet, run a business firewall (or your business router's firewall) set to block by default, and keep a copy of the rules. Do not expose internal systems directly to the internet.",
+   mean:"Your <b>boundary</b> is the edge between your network and the internet. This asks you to watch and control what crosses that edge, which, for most small businesses, is exactly what a properly configured business firewall does (deny by default, allow only what is needed). Think of it as a locked front door with someone checking who goes in and out.",
+   obj:[
+    ["a","the external system boundary is defined","You know where your network meets the internet (the outer edge)."],
+    ["b","key internal system boundaries are defined","You know your important internal dividing lines (between segments)."],
+    ["c","communications are monitored at the external system boundary","You watch traffic at the internet edge."],
+    ["d","communications are monitored at key internal boundaries","You watch traffic at key internal lines."],
+    ["e","communications are controlled at the external system boundary","You control what crosses the internet edge (firewall, deny by default)."],
+    ["f","communications are controlled at key internal boundaries","You control what crosses key internal lines."],
+    ["g","communications are protected at the external system boundary","You protect data crossing the edge (encryption, tunneling)."],
+    ["h","communications are protected at key internal boundaries","You protect data crossing internal lines."]]},
+  {id:"SC.L1-3.13.5",name:"Public-Access System Separation",
+   stmt:"Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
+   have:"Your website is hosted by a provider or sits in a separate segment (DMZ), not on your internal LAN.",
+   ev:"A simple network diagram or written description showing public-facing systems (website, guest Wi-Fi) sit on a separate segment or are hosted outside your internal network.",
+   fix:"Host your public website with an outside provider, and put guest Wi-Fi on its own network kept separate from work systems. Capture this in a short network diagram.",
+   mean:"If you run anything the public can reach, such as a public website or guest Wi-Fi, it should sit in a separate area of your network, not mixed in with the systems that hold FCI. Picture a lobby walled off from the back office. Common ways: a DMZ, a separate guest network, or simply hosting your website with an outside provider so it never sits on your internal network.",
+   obj:[
+    ["a","publicly accessible system components are identified","You know which of your systems the public can reach (e.g., web server)."],
+    ["b","subnetworks for publicly accessible system components are physically or logically separated from internal networks","Those public systems are walled off from your internal network (DMZ or hosted externally)."]]}]},
+ {abbrev:"SI",name:"System & Information Integrity",practices:[
+  {id:"SI.L1-3.14.1",name:"Flaw Remediation",
+   stmt:"Identify, report, and correct information and information system flaws in a timely manner.",
+   have:"Automatic updates / patching are enabled and you keep software current.",
+   ev:"A written patch and update process (what you patch, how often, who is responsible, and how fast you fix serious problems), plus screenshots showing automatic updates turned on.",
+   fix:"Write down your patching process and your own timeframes (you set them; CMMC does not fix a number), turn on automatic updates for operating systems and apps, and keep proof that updates are being applied.",
+   ref:"CMMC sets <b>no fixed patch deadline</b>. You define and document the timeframes yourself (risk based, fix critical flaws fastest). Underlying control: <a href=\"https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final\" target=\"_blank\" rel=\"noopener noreferrer\">NIST 800-53 SI-2 (Flaw Remediation)</a>.",
+   obj:[
+    ["a","the time within which to identify system flaws is specified","You've defined how quickly you'll find flaws (a timeframe)."],
+    ["b","system flaws are identified within the specified time frame","You actually find them within that time."],
+    ["c","the time within which to report system flaws is specified","You've defined how quickly flaws get reported internally."],
+    ["d","system flaws are reported within the specified time frame","They actually get reported in that time."],
+    ["e","the time within which to correct system flaws is specified","You've defined how quickly to patch or fix."],
+    ["f","system flaws are corrected within the specified time frame","You actually patch within that time."]]},
+  {id:"SI.L1-3.14.2",name:"Malicious Code Protection",
+   stmt:"Provide protection from malicious code at appropriate locations within organizational information systems.",
+   have:"Every computer runs antivirus / endpoint protection (e.g., Microsoft Defender) and email is filtered.",
+   ev:"A note of where anti-malware runs (all computers, email) and which product you use, plus a screenshot of it running.",
+   fix:"Make sure antivirus runs on every computer (Microsoft Defender is built into Windows and free) and that email is filtered. Write down where it is deployed.",
+   obj:[
+    ["a","designated locations for malicious code protection are identified","You've decided where malware protection is needed (PCs, email, gateways)."],
+    ["b","protection from malicious code at designated locations is provided","Anti-malware is actually running in those places."]]},
+  {id:"SI.L1-3.14.4",name:"Update Malicious Code Protection",
+   stmt:"Update malicious code protection mechanisms when new releases are available.",
+   have:"Your antivirus updates itself automatically.",
+   ev:"A screenshot showing anti-malware definitions update automatically, noted in your process document.",
+   fix:"Leave anti-malware auto-updates on (the default), confirm it is on, and note it in your process.",
+   obj:[
+    ["a","malicious code protection mechanisms are updated when new releases are available","Your anti-malware updates its definitions and engine as updates come out."]]},
+  {id:"SI.L1-3.14.5",name:"System & File Scanning",
+   stmt:"Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.",
+   have:"Your endpoint protection does real-time scanning and runs periodic scans.",
+   ev:"A note of your scan settings (real-time on, and how often full scans run), plus a screenshot of those settings in your anti-malware tool.",
+   fix:"Turn on real-time scanning and set a periodic full scan schedule (you choose how often and write it down). Most tools have these on by default.",
+   ref:"<b>You</b> set and document the scan frequency. CMMC doesn't fix a number. Underlying control: <a href=\"https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final\" target=\"_blank\" rel=\"noopener noreferrer\">NIST 800-53 SI-3 (Malicious Code Protection)</a>.",
+   obj:[
+    ["a","the frequency for malicious code scans is defined","You've set how often full scans run."],
+    ["b","malicious code scans are performed with the defined frequency","Scans actually run on that schedule."],
+    ["c","real-time malicious code scans of files from external sources as files are downloaded, opened, or executed are performed","Files from outside (downloads, USB, email) are scanned as they arrive or open."]]}]}
+];
+
+const PRACTICES=[];FAMILIES.forEach(f=>f.practices.forEach(p=>PRACTICES.push(p)));
+const TOTAL_OBJ=PRACTICES.reduce((n,p)=>n+p.obj.length,0); // 59
+
+const st={};
+PRACTICES.forEach(p=>{const o={},on={};p.obj.forEach(x=>{o[x[0]]="";on[x[0]]="";});st[p.id]={obj:o,objNotes:on,notes:"",evidence:"",updatedAt:"",updatedBy:""};});
+const scopeState={level:"",notes:"",footprint:{},includeAhead:false};
+
+/* ---- unsaved-work protection ---- */
+let dirty=false;
+function updateSaveHint(){const h=document.getElementById("saveHint");if(h)h.textContent=dirty?"Unsaved":"";}
+function markDirty(){dirty=true;updateSaveHint();}
+function clearDirty(){dirty=false;updateSaveHint();}
+document.addEventListener("input",function(e){markDirty();if(e.target&&e.target.tagName==="TEXTAREA"){fit(e.target);}});
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+function fit(t){var empty=!t.value;if(empty){t.value=t.getAttribute("placeholder")||"";}t.style.height="auto";t.style.height=(t.scrollHeight+2)+"px";if(empty){t.value="";}}
+function growAll(){document.querySelectorAll("textarea").forEach(function(t){if(t.offsetParent!==null||t===document.activeElement)fit(t);});}
+function fitIn(scope){(scope||document).querySelectorAll("textarea").forEach(fit);}
+function fit2(scope){fitIn(scope);requestAnimationFrame(function(){fitIn(scope);});}
+var _rT;window.addEventListener("resize",function(){clearTimeout(_rT);_rT=setTimeout(growAll,150);});
+
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s;}
+
+/* ---- level question ---- */
+function setLevel(v){scopeState.level=(scopeState.level===v?"":v);renderLevelBox();markDirty();}
+function renderLevelBox(){
+  const box=document.getElementById("levelBox");if(!box)return;
+  const opts=[["fci","We handle FCI only (Level 1)"],["cui","We handle CUI (Level 2)"],["unsure","Not sure"]];
+  let b='<div class="levelq-label">Which describes you?</div><div class="levelq">';
+  opts.forEach(o=>{b+=`<button class="lopt" aria-pressed="${scopeState.level===o[0]}" onclick="setLevel('${o[0]}')">${o[1]}</button>`;});
+  b+='</div>';
+  let p="";
+  if(scopeState.level==="fci") p=`<div class="callout success"><span class="ic" aria-hidden="true">&#10003;</span><div class="body"><p><strong>Level 1 is your lane.</strong> FCI-only contracts self-assess these 59 objectives. There is no C3PAO and no auditor fee. Continue to the audit below.</p></div></div>`;
+  else if(scopeState.level==="cui") p=`<div class="callout warn"><span class="ic" aria-hidden="true">!</span><div class="body"><p><strong>This is Level 2, not Level 1.</strong> CUI pulls in all 110 NIST SP 800-171 controls. Whether you self-assess or need a third-party C3PAO is set by your contract, not by you.</p><ul><li><strong>No work is wasted.</strong> The 17 Level 1 practices here are a subset of the 110, so everything you mark and document carries straight into Level 2.</li><li><strong>Shrink the footprint.</strong> The mapper applies to CUI too, and reducing what touches CUI is the biggest cost lever, since every in-scope system has to be assessed.</li><li><strong>Then isolate CUI.</strong> A managed enclave, GCC High, or build-your-own. The full Level 2 audit is a separate module.</li></ul></div></div>`;
+  else if(scopeState.level==="unsure") p=`<div class="callout info"><span class="ic" aria-hidden="true">i</span><div class="body"><p><strong>How to tell.</strong> Check your contract for DFARS clause 252.204-7012. If it is there, your contract anticipates CUI (Level 2). Look at what you actually receive: drawings, specs, source code, firmware, and test data are almost always CUI even when unmarked. If markings are missing, ask your contracting officer in writing. Silence is not permission to assume there is no CUI.</p></div></div>`;
+  box.innerHTML=b+p;
+}
+
+/* ---- footprint ---- */
+const FP_GROUPS=["Communicate","Store","Devices","On-site & physical","Outside your walls"];
+const FP_LOCATIONS=[
+  {k:"email",g:"Communicate",label:"Email / mailboxes",
+   move:"Keep FCI out of general email where you can. Route contract mail to one mailbox or folder with controlled access, and do not forward it onward.",
+   how:"You likely already own this in Microsoft 365 or Google Workspace: a shared mailbox or a rule, plus MFA on every account.",
+   maps:"AC, IA, SC"},
+  {k:"chat",g:"Communicate",label:"Chat & meetings (Teams, Slack, Zoom)",
+   move:"Decide whether FCI is allowed in chat at all. If it is, keep it in one private channel with controlled membership, not open channels or DMs.",
+   how:"A private Teams or Slack channel limited to the contract team, with external and guest access turned off.",
+   maps:"AC, SC"},
+  {k:"fileshares",g:"Store",label:"File shares, SharePoint, network drives",
+   move:"Consolidate FCI into one defined site or folder, with access limited to the people who need it. Retire the all-hands drive.",
+   how:"A SharePoint or Google shared drive with a restricted access group; review who is in it whenever staff change.",
+   maps:"AC, IA"},
+  {k:"cloud",g:"Store",label:"Cloud storage (OneDrive, Drive, Dropbox)",
+   move:"Retire ad-hoc and personal cloud copies. Keep FCI in one approved, access-controlled location and lock down sharing links.",
+   how:"Use the company tenant's storage with sharing restricted; turn off personal-account sync for work data.",
+   maps:"AC, SC"},
+  {k:"backups",g:"Store",label:"Backups (commonly missed)",
+   move:"If a backup contains FCI, the backup is in scope too. Control who can access and restore it, and where it is kept.",
+   how:"Limit backup-console access to admins; keep backup media or cloud inside the same controlled boundary.",
+   maps:"AC, MP, SC"},
+  {k:"endpoints",g:"Devices",label:"Company laptops, desktops, phones",
+   move:"Limit FCI handling to a known set of managed devices. Keep them patched, protected, and behind a per-user login.",
+   how:"Built-in disk encryption (BitLocker or FileVault), automatic updates, Microsoft Defender or similar, and MFA.",
+   maps:"AC, IA, SI"},
+  {k:"byod",g:"Devices",label:"Personal / BYOD devices",
+   move:"Get FCI off personal phones and home computers entirely. This is usually the single biggest scope cut.",
+   how:"Allow browser-only access with no download, or issue a managed device; block FCI sync to personal devices.",
+   maps:"AC, SC"},
+  {k:"usb",g:"Devices",label:"Removable media / USB",
+   move:"Restrict or eliminate FCI on USB sticks and external drives. Encrypt any that are truly needed, and wipe before disposal.",
+   how:"Disable USB storage by policy where you can; encrypt the rest; sanitize per NIST SP 800-88.",
+   maps:"MP, SC"},
+  {k:"paper",g:"On-site & physical",label:"Paper / printouts",
+   move:"Lock up FCI printouts and shred them when they are no longer needed. Limit who can print FCI.",
+   how:"A lockable cabinet or room and a cross-cut shredder; secure-print release on shared copiers.",
+   maps:"PE, MP"},
+  {k:"print",g:"On-site & physical",label:"Printers / copiers with storage",
+   move:"Multifunction copiers often keep images on an internal drive. Know whether yours do, and put device sanitization into a written media-disposal process so drives are cleared before disposal or lease return.",
+   how:"Turn on storage clearing and secure print; sanitize the drive per NIST SP 800-88 at end of life.",
+   maps:"MP, PE"},
+  {k:"servers",g:"On-site & physical",label:"On-prem servers / NAS",
+   move:"Put FCI systems in a defined, access-controlled area and limit who can reach them, physically and over the network.",
+   how:"A locked room or cabinet, network separation, and restricted admin accounts.",
+   maps:"PE, AC, SC"},
+  {k:"saas",g:"Outside your walls",label:"Cloud apps / SaaS where FCI is entered",
+   move:"Inventory the outside apps that touch FCI. Confirm each is approved, lock down sharing, and turn off ones you do not use.",
+   how:"MFA and least-privilege roles in each app; disable public or anyone-with-the-link sharing.",
+   maps:"AC, IA, SC"},
+  {k:"msp",g:"Outside your walls",label:"Outside IT / MSP / contractor access",
+   move:"Anyone outside your company who can reach FCI is in scope through that access. Put it in writing, limit it, and confirm they meet the same bar.",
+   how:"Named accounts (no shared logins), MFA, least privilege, and a flow-down clause in your agreement.",
+   maps:"AC, IA, SC"}
+];
+function toggleFp(k){ scopeState.footprint[k]=!scopeState.footprint[k]; renderFootprint(); markDirty(); }
+function renderFootprint(){
+  const grid=document.getElementById("fpGrid"); if(!grid) return;
+  grid.innerHTML=FP_GROUPS.map(g=>{
+    const items=FP_LOCATIONS.filter(l=>l.g===g);
+    if(!items.length) return "";
+    return `<div class="fpgroup"><div class="fpgroup-h">${esc(g)}</div><div class="fprow">`+
+      items.map(l=>`<button class="fpitem${l.cui?" cui":""}" aria-pressed="${!!scopeState.footprint[l.k]}" onclick="toggleFp('${l.k}')">${esc(l.label)}</button>`).join("")+
+      `</div></div>`;
+  }).join("");
+  const res=document.getElementById("fpResult"); if(!res) return;
+  const inscope=FP_LOCATIONS.filter(l=>scopeState.footprint[l.k]);
+  if(!inscope.length){ res.innerHTML=`<div class="fp-now">Nothing selected yet. Tap the places FCI actually lives today.</div>`; return; }
+  let h="";
+  if(inscope.length){
+    h+=`<div class="fp-now"><b>What you have now:</b> FCI touches <b>${inscope.length}</b> of these areas. Each is in scope, and each maps to the Level 1 practices you will need evidence for. The reduce ideas below are examples; whatever you choose, capture it as a short written policy or process and keep the proof current. A statement on its own is not evidence.</div>`;
+    inscope.forEach(l=>{
+      h+=`<div class="fp-item"><h5>${esc(l.label)} <span class="fp-maps">${esc(l.maps)}</span></h5>`+
+         `<p><span class="li">Reduce:</span> ${esc(l.move)}</p>`+
+         `<p><span class="li">How, with what you likely own:</span> ${esc(l.how)}</p></div>`;
+    });
+    h+=`<div class="fp-now" style="margin-top:6px">Last step: capture this in your scope statement below. Name where FCI lives and what is in and out of scope. That sentence is your boundary.</div>`;
+  }
+  res.innerHTML=h;
+}
+
+/* ---- audit render ---- */
+function toggleFam(ab){
+  const fam=document.getElementById("fam_"+ab); if(!fam) return;
+  const head=fam.querySelector(".fhead");
+  const open=head.getAttribute("aria-expanded")==="true";
+  head.setAttribute("aria-expanded",open?"false":"true");
+  fam.classList.toggle("open",!open);
+  if(!open) fit2(fam);
+}
+function openFam(ab){
+  const fam=document.getElementById("fam_"+ab); if(!fam) return;
+  fam.querySelector(".fhead").setAttribute("aria-expanded","true");
+  fam.classList.add("open");
+  fit2(fam);
+  fam.scrollIntoView({block:"start"});
+}
+function render(){
+  const root=document.getElementById("families");root.innerHTML="";
+  FAMILIES.forEach((f,i)=>{
+    const objCount=f.practices.reduce((n,p)=>n+p.obj.length,0);
+    const fam=document.createElement("div");fam.className="fam";fam.id="fam_"+f.abbrev;
+    let body=`<div class="fam-bodytop"><button class="btn ghost" onclick="copyFamily('${f.abbrev}')">Copy this section</button></div>`;
+    f.practices.forEach(p=>{
+      let objHtml="";
+      p.obj.forEach(o=>{
+        const cur=st[p.id].obj[o[0]];
+        objHtml+=`<div class="obj"><div class="oletter">${o[0]}</div><div class="ogrow">`+
+          `<div class="otext">${esc(cap(o[1]))}</div>`+
+          `<div class="oplain"><b>In plain terms:</b> ${esc(o[2])}</div>`+
+          `<div class="seg" role="group" aria-label="${p.id} objective ${o[0]}">`+
+            `<button data-v="met" id="b_${p.id}_${o[0]}_met" aria-pressed="${cur==='met'}" onclick="setObj('${p.id}','${o[0]}','met')">Met</button>`+
+            `<button data-v="notmet" id="b_${p.id}_${o[0]}_notmet" aria-pressed="${cur==='notmet'}" onclick="setObj('${p.id}','${o[0]}','notmet')">Not met</button>`+
+            `<button data-v="na" id="b_${p.id}_${o[0]}_na" aria-pressed="${cur==='na'}" onclick="setObj('${p.id}','${o[0]}','na')">N/A</button>`+
+          `</div>`+
+          `<textarea class="onote" aria-label="${p.id} objective ${o[0]} why or how" placeholder="Why or how (optional)" oninput="setObjNote('${p.id}','${o[0]}',this.value)">${esc(st[p.id].objNotes[o[0]]||"")}</textarea>`+
+          `</div></div>`;
+      });
+      body+=`<div class="practice" id="card_${p.id}">`+
+        `<div class="p-top"><span class="pid">${p.id}</span><span class="pname">${esc(p.name)}</span><span class="finding" id="f_${p.id}">In progress</span></div>`+
+        `<div class="stmt"><span class="q">Official requirement</span>${esc(p.stmt)}</div>`+
+        (p.mean?`<details class="meanbox"><summary>What does this mean in plain English?</summary><div>${p.mean}</div></details>`:"")+
+        `<div class="have"><b>You likely already meet this if:</b> ${esc(p.have)}</div>`+
+        (p.ref?`<div class="refnote"><b>Heads-up:</b> ${p.ref}</div>`:"")+
+        `<div class="psrc"><a href="https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1v2.pdf" target="_blank" rel="noopener noreferrer">CMMC Level 1 Assessment Guide</a> &middot; NIST SP 800-171 Rev 2 ${p.id.split("-")[1]} &middot; <a href="https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21" target="_blank" rel="noopener noreferrer">FAR 52.204-21</a></div>`+
+        objHtml+
+        ((p.ev||p.fix)?`<div class="docblock"><div class="docblock-h">What to document, and how</div><p class="tipnote">Meeting a practice is more than doing it or saying you do. Keep real documentation, a short written policy or procedure where one fits, in final form (a draft does not count) and kept current. Then back it with proof the practice is actually in place: a screenshot, a log, an export, or a current list. A verbal claim is not evidence. Most small businesses already run the controls; they fail because they cannot show the written policy and the proof behind it.</p>${p.ev?`<p><b>Evidence that counts:</b> ${p.ev}</p>`:""}${p.fix?`<p><b>If you do not have it yet, a low-cost fix:</b> ${p.fix}</p>`:""}</div>`:"")+
+        `<div class="evidence"><label for="e_${p.id}">Evidence for this control: describe the artifacts <span class="req" title="required to count as Met">*</span></label>`+
+        `<textarea id="e_${p.id}" aria-label="${p.id} evidence" placeholder="Name the artifacts that prove these objectives are met and where they live: network diagram, written policy, config screenshot, log export." oninput="setField('${p.id}','evidence',this.value)">${esc(st[p.id].evidence)}</textarea>`+
+        `<div class="evhint">The tool keeps your descriptions, not the files, so store the actual documents in your own evidence folder.</div></div>`+
+        `<div class="p-foot"><button class="btn ghost" onclick="copyPractice('${p.id}')">Copy this control</button></div>`+
+        `</div>`;
+    });
+    fam.innerHTML=`<button class="fhead" aria-expanded="false" aria-controls="fbody_${f.abbrev}" onclick="toggleFam('${f.abbrev}')">`+
+      `<i class="chev" aria-hidden="true"></i><span class="fname">${esc(f.name)}</span><span class="fcode">${f.abbrev}</span>`+
+      `<span class="fcount" id="famct_${f.abbrev}">${f.practices.length} practices, ${objCount} objectives</span></button>`+
+      `<div class="fbody" id="fbody_${f.abbrev}">${body}</div>`;
+    root.appendChild(fam);
+  });
+  recompute();requestAnimationFrame(growAll);
+}
+
+function markUpdated(pid){st[pid].updatedAt=new Date().toISOString().slice(0,10);const el=document.getElementById("org_updatedby");st[pid].updatedBy=el?el.value.trim():"";}
+function setObj(pid,letter,v){
+  st[pid].obj[letter]=(st[pid].obj[letter]===v?"":v);
+  const cur=st[pid].obj[letter];
+  ["met","notmet","na"].forEach(k=>{const btn=document.getElementById(`b_${pid}_${letter}_${k}`);if(btn)btn.setAttribute("aria-pressed",cur===k);});
+  markUpdated(pid);recompute();markDirty();
+}
+function setField(pid,k,v){st[pid][k]=v;markUpdated(pid);recompute();}
+function setObjNote(pid,letter,v){st[pid].objNotes[letter]=v;markUpdated(pid);}
+
+function practiceFinding(p){
+  const states=p.obj.map(o=>st[p.id].obj[o[0]]||"");
+  if(states.some(s=>s==="notmet")) return "notmet";
+  if(states.some(s=>s==="")) return "inprogress";
+  if(states.every(s=>s==="na")) return "na";
+  return st[p.id].evidence.trim() ? "met" : "attn";
+}
+
+function recompute(){
+  let met=0,notmet=0,na=0,un=0;
+  PRACTICES.forEach(p=>p.obj.forEach(o=>{const s=st[p.id].obj[o[0]]||"";if(s==="met")met++;else if(s==="notmet")notmet++;else if(s==="na")na++;else un++;}));
+  let pNotmet=0,pAttn=0,pInprog=0,pReady=0;
+  PRACTICES.forEach(p=>{
+    const f=practiceFinding(p);
+    const el=document.getElementById("f_"+p.id);
+    const lbl={met:"Met",notmet:"Not met",na:"N/A",attn:"Needs evidence",inprogress:"In progress"}[f];
+    if(el){el.textContent=lbl;el.dataset.f=(f==="inprogress"?"":f);}
+    if(f==="notmet")pNotmet++;else if(f==="attn")pAttn++;else if(f==="inprogress")pInprog++;else pReady++;
+  });
+  const nav=document.getElementById("famNav");
+  if(nav){
+    nav.innerHTML=`<span class="navlbl">Jump to</span>`+FAMILIES.map(f=>{
+      let fm=0,ft=0; f.practices.forEach(p=>p.obj.forEach(o=>{ft++;if(st[p.id].obj[o[0]]==="met")fm++;}));
+      const full=fm===ft;
+      const ce=document.getElementById("famct_"+f.abbrev); if(ce) ce.textContent=`${fm} / ${ft} met`;
+      const fe=document.getElementById("fam_"+f.abbrev); if(fe) fe.classList.toggle("done",full);
+      return `<a href="#fam_${f.abbrev}" class="navchip${full?" done":""}" onclick="openFam('${f.abbrev}');return false;">${f.abbrev} ${fm}/${ft}</a>`;
+    }).join("");
+  }
+  const pct=Math.round(((met+na)/TOTAL_OBJ)*100);
+  document.getElementById("bar").style.width=pct+"%";
+  const pb=document.getElementById("progress");
+  if(pb){pb.setAttribute("aria-valuenow",pct);pb.setAttribute("aria-valuetext",`${met+na} of ${TOTAL_OBJ} objectives resolved, ${pct} percent`);}
+  document.getElementById("countText").textContent=`${met} of ${TOTAL_OBJ} objectives met`;
+  document.getElementById("pctText").textContent=pct+"%";
+  document.getElementById("live").textContent=`${met} of ${TOTAL_OBJ} objectives met, ${pct} percent`;
+  const vs=document.getElementById("vstatus"),sub=document.getElementById("vSub"),wrap=document.getElementById("progwrap");
+  if(pInprog===0&&pNotmet===0&&pAttn===0){
+    vs.textContent="Ready to self-attest";vs.dataset.s="ok";wrap.dataset.s="ok";
+    sub.textContent=`All ${PRACTICES.length} practices are Met or justified N/A with evidence. Document, post your score in SPRS, and have your senior official affirm.`;
+  }else if(pNotmet>0){
+    vs.textContent=`Not ready: ${pNotmet} not met`;vs.dataset.s="bad";wrap.dataset.s="";
+    sub.textContent="Level 1 is pass or fail with no POA&M. Every not-met objective must be closed before you can attest.";
+  }else if(pInprog>0){
+    vs.textContent=`${pInprog} in progress`;vs.dataset.s="prog";wrap.dataset.s="";
+    sub.textContent=`${un} of ${TOTAL_OBJ} objectives still need a Met / Not met / N/A mark.`;
+  }else{
+    vs.textContent=`Almost: ${pAttn} need evidence`;vs.dataset.s="warn";wrap.dataset.s="";
+    sub.textContent="These practices are objective-complete but missing the required evidence. An attestation must be backed by evidence.";
+  }
+  const evb=document.getElementById("evbText");
+  if(evb){
+    if(pAttn>0){evb.textContent=`${pAttn} marked, no evidence`;evb.dataset.s="warn";}
+    else if(pReady===PRACTICES.length){evb.textContent=`evidence on file for all ${PRACTICES.length}`;evb.dataset.s="ok";}
+    else{evb.textContent=`${pReady}/${PRACTICES.length} practices backed`;evb.dataset.s="";}
+  }
+}
+
+/* ---- copy / reports ---- */
+function findingWord(p){return {met:"MET",notmet:"NOT MET",na:"NOT APPLICABLE",attn:"MET (documentation incomplete)",inprogress:"IN PROGRESS"}[practiceFinding(p)];}
+function objWord(s){return {met:"MET",notmet:"NOT MET",na:"N/A","":"(unmarked)"}[s||""];}
+function stripTags(s){return (s||"").replace(/<[^>]*>/g,"").replace(/\s+/g," ").trim();}
+function practiceText(p){
+  let t=`${p.id}: ${p.name}   [Finding: ${findingWord(p)}]\n`;
+  t+=`Requirement: ${p.stmt}\n`;
+  t+=`Assessment objectives:\n`;
+  p.obj.forEach(o=>{
+    t+=`  [${o[0]}] ${cap(o[1])}  ->  ${objWord(st[p.id].obj[o[0]])}\n`;
+    const n=(st[p.id].objNotes[o[0]]||"").trim();
+    if(n) t+=`        Why/how: ${n}\n`;
+  });
+  t+=`Evidence: ${st[p.id].evidence.trim()||"(none recorded)"}\n`;
+  return t;
+}
+function copyPractice(pid){copyText(practiceText(PRACTICES.find(x=>x.id===pid)),`Copied ${pid}`);}
+function copyFamily(ab){
+  const f=FAMILIES.find(x=>x.abbrev===ab);if(!f)return;
+  let met=0,objs=0;f.practices.forEach(p=>p.obj.forEach(x=>{objs++;if(st[p.id].obj[x[0]]==="met")met++;}));
+  let h=`${f.abbrev}: ${f.name}\n${f.practices.length} practices, ${objs} objectives, ${met} marked Met\n${"=".repeat(56)}\n\n`;
+  f.practices.forEach(p=>{h+=practiceText(p)+"\n";});
+  copyText(h,`Copied ${f.abbrev} section`);
+}
+function copyAll(){
+  const o=gatherOrg();
+  let met=0;PRACTICES.forEach(p=>p.obj.forEach(x=>{if(st[p.id].obj[x[0]]==="met")met++;}));
+  let h=`SYSTEM SECURITY PLAN (SSP) DRAFT\nCMMC Level 1 Self-Assessment, FAR 52.204-21\n${"=".repeat(60)}\n`;
+  h+=`Content fingerprint ${assessmentFingerprint()} (the same answers always produce this code)\n`;
+  h+=`1. SYSTEM INFORMATION\n`;
+  h+=`Organization: ${o.company||"(unspecified)"}\n`;
+  h+=`System / enclave assessed: ${o.system||"(unspecified)"}\n`;
+  h+=`Prepared by: ${o.by||"(unspecified)"}    Date: ${o.date||"(unspecified)"}\n`;
+  h+=`Affirming senior official: ${o.official||"(unspecified)"}\n`;
+  h+=`Exported: ${new Date().toISOString().slice(0,16).replace("T"," ")} by ${o.updatedby||o.by||"(unspecified)"}\n\n`;
+  h+=`2. SCOPE\n`;
+  const lvl={fci:"Level 1 (FCI only)",cui:"Level 2 (CUI), wrong tool",unsure:"Not yet determined"}[scopeState.level]||"(not determined)";
+  h+=`Level determination: ${lvl}\n`;
+  h+=`Scope statement: ${scopeState.notes.trim()||"(not documented)"}\n`;
+  const fp=FP_LOCATIONS.filter(l=>scopeState.footprint[l.k]&&!l.cui).map(l=>l.label);
+  h+=`FCI footprint (in scope): ${fp.length?fp.join("; "):"(not mapped)"}\n`;
+  h+=`Result: ${met} of ${TOTAL_OBJ} objectives marked Met\n\n`;
+  h+=`3. CONTROL IMPLEMENTATION (17 practices, 59 objectives)\n`;
+  h+=`Source: FAR 52.204-21 (now 52.240-93) / NIST SP 800-171A / DoD CMMC Level 1 Assessment Guide (CC BY 4.0)\n${"=".repeat(60)}\n\n`;
+  FAMILIES.forEach(f=>{h+=`### ${f.abbrev}: ${f.name}\n\n`;f.practices.forEach(p=>{h+=practiceText(p)+"\n";});});
+  const gaps=PRACTICES.filter(p=>{const fnd=practiceFinding(p);return fnd==="notmet"||fnd==="attn";});
+  h+=`${"=".repeat(60)}\n4. GAPS TO CLOSE BEFORE YOU ATTEST\n`;
+  if(!gaps.length){h+=`None. Every applicable practice is Met or justified N/A with evidence.\n`;}
+  else{gaps.forEach(p=>{const nm=p.obj.filter(x=>st[p.id].obj[x[0]]==="notmet").map(x=>x[0]);h+=`- ${p.id} ${p.name}: ${findingWord(p)}${nm.length?` (objectives not met: ${nm.join(", ")})`:""}${st[p.id].evidence.trim()?"":", needs evidence"}\n`;});}
+  if(scopeState.includeAhead){
+    h+=`\n${"=".repeat(60)}\nAPPENDIX: LOOKING AHEAD (optional planning, not part of Level 1)\n`;
+    h+=`CMMC is assessed against NIST SP 800-171 Rev 2 today; Rev 3 is finalized but not yet required.\n\n`;
+    AHEAD.forEach(a=>{const s=aheadState[a.id];h+=`- ${a.title}\n    Maps to Rev 3: ${a.ctrl} ${a.cname} (${a.fam})\n    Status: ${AH_STATUS[s.status]||"Not started"}\n`;if((s.notes||"").trim())h+=`    Notes: ${s.notes.trim()}\n`;});
+    h+=`\nRev 3: https://csrc.nist.gov/pubs/sp/800/171/r3/final  (skip FedRAMP unless you handle CUI)\n`;
+  }
+  copyText(h,`Copied SSP draft: ${met}/${TOTAL_OBJ} objectives`);
+}
+function gapReport(){
+  const o=gatherOrg();
+  let met=0;PRACTICES.forEach(p=>p.obj.forEach(x=>{if(st[p.id].obj[x[0]]==="met")met++;}));
+  let pMet=0,pNot=0,pAttn=0,pNa=0,pProg=0;
+  PRACTICES.forEach(p=>{const f=practiceFinding(p);if(f==="met")pMet++;else if(f==="notmet")pNot++;else if(f==="attn")pAttn++;else if(f==="na")pNa++;else pProg++;});
+  const gaps=PRACTICES.filter(p=>{const f=practiceFinding(p);return f==="notmet"||f==="attn";});
+  let posture;
+  if(pNot>0) posture=`NOT READY. ${pNot} practice${pNot!==1?"s":""} NOT MET.`;
+  else if(pAttn>0) posture=`ALMOST. ${pAttn} practice${pAttn!==1?"s":""} need documentation before they can be marked Met.`;
+  else if(pProg>0) posture=`IN PROGRESS. ${pMet+pNa} of ${PRACTICES.length} practices resolved so far.`;
+  else posture=`READY. All ${PRACTICES.length} practices are Met or justified N/A with evidence.`;
+  const lvl={fci:"Level 1 (FCI only)",cui:"Level 2 (CUI), wrong tool",unsure:"Not yet determined"}[scopeState.level]||"(not determined)";
+  const fp=FP_LOCATIONS.filter(l=>scopeState.footprint[l.k]&&!l.cui).map(l=>l.label);
+  let h=`CMMC LEVEL 1 READINESS AND GAP REPORT\n`;
+  h+=`${o.company||"(organization)"}${o.system?` · ${o.system}`:""}\n`;
+  h+=`Prepared ${o.date||"(date)"}${o.by?` by ${o.by}`:""} · generated ${new Date().toISOString().slice(0,10)}\n`;
+  h+=`${"=".repeat(56)}\n\n`;
+  h+=`SUMMARY\nPosture: ${posture}\n`;
+  h+=`Practices: ${pMet} Met · ${pNot} Not met · ${pAttn} need documentation · ${pNa} N/A${pProg?` · ${pProg} in progress`:""} (of ${PRACTICES.length})\n`;
+  h+=`Objectives: ${met} of ${TOTAL_OBJ} marked Met\n\n`;
+  h+=`SCOPE\nLevel determination: ${lvl}\n`;
+  h+=`FCI footprint (in scope): ${fp.length?fp.join("; "):"(not mapped)"}\n`;
+  h+=`Scope statement: ${scopeState.notes.trim()||"(not documented)"}\n\n`;
+  if(!gaps.length){h+=`OPEN ITEMS: none. Every applicable control is Met or justified N/A with evidence.\nNext: document it, post your score in SPRS, and have your senior official affirm.\n\n`;}
+  else{
+    h+=`OPEN ITEMS (${gaps.length}), to close before you attest:\n\n`;
+    gaps.forEach((p,i)=>{
+      const nm=p.obj.filter(x=>st[p.id].obj[x[0]]==="notmet").map(x=>x[0]);
+      h+=`${i+1}. ${p.id}: ${p.name}  [${findingWord(p)}]\n`;
+      if(nm.length) h+=`    Objectives not met: ${nm.join(", ")}\n`;
+      if(!st[p.id].evidence.trim()) h+=`    Action: record the supporting evidence (a short written document plus proof it is in place).\n`;
+      if(p.fix) h+=`    Suggested fix: ${stripTags(p.fix)}\n`;
+      h+=`\n`;
+    });
+  }
+  if(o.advisor&&o.advisor.trim()){h+=`ADVISOR NOTES\n${o.advisor.trim()}\n\n`;}
+  h+=`${"=".repeat(56)}\n`;
+  h+=`Level 1 is a self-assessment. There is no auditor fee and no required consultant (the RP designation is voluntary). This report is a readiness aid, not a certification. Verify against the DoD CMMC Level 1 Assessment Guide and FAR 52.204-21.\n`;
+  copyText(h,`Copied gap report: ${gaps.length} open item${gaps.length!==1?"s":""}`);
+}
+function copyText(text,msg){const done=()=>toast(msg);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else fallbackCopy(text,done);}
+function fallbackCopy(text,done){const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(e){toast("Copy blocked, select and copy manually");}document.body.removeChild(ta);}
+let toastT;
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2000);}
+
+/* ---- save / load / reset ---- */
+function val(id){return document.getElementById(id).value;}
+function setVal(id,v){const el=document.getElementById(id);if(el)el.value=v||"";}
+function gatherOrg(){return {company:val("org_company"),system:val("org_system"),by:val("org_by"),date:val("org_date"),official:val("org_official"),updatedby:val("org_updatedby"),advisor:val("org_advisor")};}
+function updateLifecycle(){
+  const el=document.getElementById("lifecycle");if(!el)return;
+  const d=(document.getElementById("org_date").value||"").trim();
+  const t=Date.parse(d);
+  if(isNaN(t)){el.dataset.s="";el.innerHTML=`<b>Annual cycle:</b> Level 1 must be self-assessed and affirmed in SPRS every year. Add your assessment date above to see your next due date.`;return;}
+  const due=new Date(t);due.setFullYear(due.getFullYear()+1);
+  const dueStr=due.toISOString().slice(0,10);
+  const days=Math.round((due-Date.now())/86400000);
+  let s,txt;
+  if(days<0){s="overdue";txt=`Overdue by ${-days} day${-days!==1?"s":""}. Re-assess and re-affirm now.`;}
+  else if(days<=60){s="soon";txt=`Due in ${days} day${days!==1?"s":""}. Plan your annual re-assessment.`;}
+  else{s="ok";txt=`On track, about ${days} days out.`;}
+  el.dataset.s=s;
+  el.innerHTML=`<b>Next annual review due: ${dueStr}.</b> ${txt} <span class="lc-note">Level 1 is reassessed and re-affirmed in SPRS each year.</span>`;
+}
+function csvCell(v){v=(v==null?"":String(v));if(/^[=+\-@\t\r]/.test(v))v="'"+v;if(/[",\n\r]/.test(v))v='"'+v.replace(/"/g,'""')+'"';return v;}
+function exportCSV(){
+  const o=gatherOrg();
+  const meta=[["CMMC Level 1 self-assessment export"],["Organization",o.company],["System / enclave",o.system],["Prepared by",o.by],["Affirming official",o.official],["Exported",new Date().toISOString().slice(0,16).replace("T"," ")],["Exported by",o.updatedby||o.by],["Source","FAR 52.204-21 (now 52.240-93) / NIST SP 800-171 Rev 2 / DoD CMMC Level 1 Assessment Guide"],["Content fingerprint",assessmentFingerprint()],[""]];
+  const rows=[["Family","Practice ID","NIST 800-171","Practice","Finding","Obj","Objective (official)","Status","Why / how (objective)","Evidence (control)","Last updated","Updated by","Source URL"]];
+  FAMILIES.forEach(f=>f.practices.forEach(p=>{const finding=findingWord(p);p.obj.forEach(ob=>{rows.push([f.name,p.id,ctrlNum(p.id),p.name,finding,ob[0],cap(ob[1]),objWord(st[p.id].obj[ob[0]]),st[p.id].objNotes[ob[0]]||"",st[p.id].evidence,st[p.id].updatedAt,st[p.id].updatedBy,SRC_171]);});}));
+  const all=meta.concat(rows).map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+all],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");const day=new Date().toISOString().slice(0,10);
+  const slug=(o.company||"cmmc-l1").replace(/[^a-z0-9]+/gi,"-").toLowerCase();
+  a.href=URL.createObjectURL(blob);a.download=`${slug}-self-assessment-${day}.csv`;a.click();URL.revokeObjectURL(a.href);
+  toast("CSV exported, opens in Excel");
+}
+function fpHash(str){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36).toUpperCase().padStart(11,"0").slice(-10);}
+function assessmentFingerprint(){const o=gatherOrg();const parts=["v1",o.company||"",o.system||"",scopeState.level||"",(scopeState.notes||"").trim()];Object.keys(scopeState.footprint||{}).sort().forEach(k=>parts.push("fp:"+k+"="+scopeState.footprint[k]));PRACTICES.forEach(p=>{const s=st[p.id];parts.push(p.id+"|"+p.obj.map(x=>s.obj[x[0]]||"").join("")+"|"+(s.evidence||"").trim()+"|"+(s.notes||"").trim());});AHEAD.forEach(a=>{const s=aheadState[a.id];parts.push("ah:"+a.id+"|"+(s.status||"")+"|"+(s.notes||"").trim());});return fpHash(parts.join("\n"));}
+
+/* ---- compare two saved files ---- */
+let diffA=null,diffB=null;
+let diffReturnFocus=null;
+function openDiff(){closeMenus();diffReturnFocus=document.activeElement;diffA=null;diffB=null;const o=document.getElementById("diffOverlay");o.hidden=false;document.getElementById("diffFileA").value="";document.getElementById("diffFileB").value="";document.getElementById("diffOut").innerHTML='<p class="diff-empty">Choose two files to compare.</p>';document.getElementById("diffFileA").focus();}
+function closeDiff(){document.getElementById("diffOverlay").hidden=true;if(diffReturnFocus&&diffReturnFocus.focus)diffReturnFocus.focus();}
+function diffTrap(e){const o=document.getElementById("diffOverlay");if(o.hidden)return;if(e.key==="Escape"){e.preventDefault();closeDiff();return;}if(e.key!=="Tab")return;const list=Array.prototype.filter.call(o.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'),el=>!el.disabled&&el.offsetParent!==null);if(!list.length)return;const first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+document.addEventListener("keydown",diffTrap);
+function loadDiffFile(which,ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(which==="A")diffA=d;else diffB=d;if(diffA&&diffB)renderDiff();else document.getElementById("diffOut").innerHTML='<p class="diff-empty">Now load the '+(diffA?"compared (newer)":"baseline (older)")+' file.</p>';}catch(e){document.getElementById("diffOut").innerHTML='<p class="diff-empty">That file could not be read as a saved assessment.</p>';}};r.readAsText(f);}
+function findingFor(p,S){const node=(S.state&&S.state[p.id])||{};const obj=node.obj||{};const states=p.obj.map(o=>obj[o[0]]||"");if(states.some(s=>s==="notmet"))return "notmet";if(states.some(s=>s===""))return "inprogress";if(states.every(s=>s==="na"))return "na";return (node.evidence||"").trim()?"met":"attn";}
+function renderDiff(){
+  const A=diffA,B=diffB;
+  const FW={met:"Met",notmet:"Not met",na:"N/A",attn:"Needs evidence",inprogress:"In progress"};
+  const OV={met:"Met",notmet:"Not met",na:"N/A","":"unmarked"};
+  const SL={planned:"Planned",inprogress:"In progress",inplace:"In place","":"Not started"};
+  let objC=[],evC=[],noteC=[],findC=[],scopeC=[],aheadC=[],improved=0,regressed=0;
+  PRACTICES.forEach(p=>{
+    const sa=(A.state&&A.state[p.id])||{obj:{}},sb=(B.state&&B.state[p.id])||{obj:{}};
+    p.obj.forEach(o=>{const va=(sa.obj&&sa.obj[o[0]])||"",vb=(sb.obj&&sb.obj[o[0]])||"";if(va!==vb)objC.push(`<div class="diff-line"><span class="id">${p.id} (${o[0]})</span> <span class="diff-from">${OV[va]}</span> &rarr; <span class="diff-to">${OV[vb]}</span></div>`);});
+    if((sa.evidence||"").trim()!==(sb.evidence||"").trim())evC.push(`<div class="diff-line"><span class="id">${p.id}</span> evidence ${(sa.evidence||"").trim()?((sb.evidence||"").trim()?"changed":"removed"):"added"}</div>`);
+    if((sa.notes||"").trim()!==(sb.notes||"").trim())noteC.push(`<div class="diff-line"><span class="id">${p.id}</span> notes changed</div>`);
+    const fa=findingFor(p,A),fb=findingFor(p,B);
+    if(fa!==fb){const ga=(fa==="met"||fa==="na"),gb=(fb==="met"||fb==="na");if(gb&&!ga)improved++;if(ga&&!gb)regressed++;findC.push(`<div class="diff-line"><span class="id">${p.id} ${esc(p.name)}</span> <span class="diff-from">${FW[fa]}</span> &rarr; <span class="diff-to">${FW[fb]}</span></div>`);}
+  });
+  const sca=(A.scope||{}),scb=(B.scope||{});
+  if((sca.level||"")!==(scb.level||""))scopeC.push(`<div class="diff-line">Level <span class="diff-from">${esc(sca.level||"unset")}</span> &rarr; <span class="diff-to">${esc(scb.level||"unset")}</span></div>`);
+  if((sca.notes||"").trim()!==(scb.notes||"").trim())scopeC.push('<div class="diff-line">Scope statement changed</div>');
+  const fpa=sca.footprint||{},fpb=scb.footprint||{};const fpk=new Set(Object.keys(fpa).concat(Object.keys(fpb)));fpk.forEach(k=>{if((fpa[k]||"")!==(fpb[k]||""))scopeC.push(`<div class="diff-line">Footprint <span class="id">${esc(k)}</span> changed</div>`);});
+  const aha=(A.aheadItems||{}),ahb=(B.aheadItems||{});
+  AHEAD.forEach(a=>{const xa=aha[a.id]||{},xb=ahb[a.id]||{};if((xa.status||"")!==(xb.status||""))aheadC.push(`<div class="diff-line"><span class="id">${esc(a.title)}</span> <span class="diff-from">${SL[xa.status||""]}</span> &rarr; <span class="diff-to">${SL[xb.status||""]}</span></div>`);else if((xa.notes||"").trim()!==(xb.notes||"").trim())aheadC.push(`<div class="diff-line"><span class="id">${esc(a.title)}</span> notes changed</div>`);});
+  const sec=(t,arr)=>arr.length?`<div class="diff-group"><h3>${t} (${arr.length})</h3>${arr.join("")}</div>`:"";
+  const dA=(A.savedAt||"").slice(0,16).replace("T"," "),dB=(B.savedAt||"").slice(0,16).replace("T"," ");
+  let out=`<p class="diff-meta"><strong>Baseline:</strong> ${esc((A.org&&A.org.company)||"(unnamed)")}, saved ${esc(dA||"unknown")}${A.fingerprint?", fingerprint "+esc(A.fingerprint):""}<br><strong>Compared:</strong> ${esc((B.org&&B.org.company)||"(unnamed)")}, saved ${esc(dB||"unknown")}${B.fingerprint?", fingerprint "+esc(B.fingerprint):""}</p>`;
+  if(A.fingerprint&&B.fingerprint&&A.fingerprint===B.fingerprint){out+='<p class="diff-none">These two files share the same fingerprint: the answers are identical.</p>';document.getElementById("diffOut").innerHTML=out;return;}
+  out+=`<p class="diff-meta">${improved} practice(s) improved, ${regressed} regressed.</p>`;
+  out+=sec("Practice findings changed",findC)+sec("Objective status changes",objC)+sec("Evidence changes",evC)+sec("Note changes",noteC)+sec("Scope changes",scopeC)+sec("Looking ahead changes",aheadC);
+  if(!(findC.length||objC.length||evC.length||noteC.length||scopeC.length||aheadC.length))out+='<p class="diff-none">No differences found in the answers.</p>';
+  document.getElementById("diffOut").innerHTML=out;
+}
+function saveJSON(){
+  const payload={tool:"cmmc-for-smbs",version:"1.0",savedAt:new Date().toISOString(),fingerprint:assessmentFingerprint(),org:gatherOrg(),scope:scopeState,aheadItems:aheadState,state:st};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a=document.createElement("a");const stamp=(gatherOrg().company||"cmmc-l1").replace(/[^a-z0-9]+/gi,"-").toLowerCase();
+  a.href=URL.createObjectURL(blob);a.download=`${stamp}-self-assessment-${new Date().toISOString().slice(0,16).replace("T","-").replace(":","")}.json`;a.click();URL.revokeObjectURL(a.href);
+  toast("Saved to your device");clearDirty();
+}
+function loadJSON(ev){
+  const file=ev.target.files[0];if(!file)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(d.org){setVal("org_company",d.org.company);setVal("org_system",d.org.system);setVal("org_by",d.org.by);setVal("org_date",d.org.date);setVal("org_official",d.org.official);setVal("org_updatedby",d.org.updatedby);setVal("org_advisor",d.org.advisor);updateLifecycle();}
+    if(d.scope){scopeState.level=d.scope.level||"";scopeState.notes=d.scope.notes||"";scopeState.footprint=(d.scope.footprint&&typeof d.scope.footprint==="object")?d.scope.footprint:{};scopeState.includeAhead=!!d.scope.includeAhead;const _ai=document.getElementById("ahead_include");if(_ai)_ai.checked=scopeState.includeAhead;setVal("scopeNotes",scopeState.notes);renderLevelBox();renderFootprint();}
+    if(d.state){PRACTICES.forEach(p=>{const src=d.state[p.id];if(src){st[p.id].notes=src.notes||"";st[p.id].evidence=src.evidence||"";st[p.id].updatedAt=src.updatedAt||"";st[p.id].updatedBy=src.updatedBy||"";p.obj.forEach(o=>{st[p.id].obj[o[0]]=(src.obj&&src.obj[o[0]])||"";st[p.id].objNotes[o[0]]=(src.objNotes&&src.objNotes[o[0]])||"";});}});}
+    if(d.aheadItems){AHEAD.forEach(a=>{const src=d.aheadItems[a.id];if(src){aheadState[a.id].status=src.status||"";aheadState[a.id].notes=src.notes||"";}});}
+    render();renderAhead();requestAnimationFrame(growAll);
+    if(d.fingerprint&&assessmentFingerprint()!==d.fingerprint){toast("Loaded. Note: contents differ from the file\u2019s saved fingerprint.");}else{toast("Loaded");}
+    clearDirty();
+  }catch(e){alert("That file could not be read as a saved self-assessment.");}};
+  r.readAsText(file);ev.target.value="";
+}
+function resetAll(){
+  if(!confirm("Clear all responses and start over? Save first if you want to keep this."))return;
+  PRACTICES.forEach(p=>{st[p.id].notes="";st[p.id].evidence="";st[p.id].updatedAt="";st[p.id].updatedBy="";p.obj.forEach(o=>{st[p.id].obj[o[0]]="";st[p.id].objNotes[o[0]]="";});});
+  ["org_company","org_system","org_by","org_date","org_official","org_updatedby","org_advisor"].forEach(i=>setVal(i,""));
+  scopeState.level="";scopeState.notes="";scopeState.footprint={};scopeState.includeAhead=false;const _ai=document.getElementById("ahead_include");if(_ai)_ai.checked=false;setVal("scopeNotes","");renderLevelBox();renderFootprint();updateLifecycle();
+  AHEAD.forEach(a=>{aheadState[a.id].status="";aheadState[a.id].notes="";});renderAhead();
+  render();toast("Reset");clearDirty();
+}
+
+/* ---- menus ---- */
+function toggleMenu(which){
+  const map={nav:["navBtn","navMenu"],rep:["repBtn","repMenu"]};
+  const m=document.getElementById(map[which][1]);const wasHidden=m.hidden;closeMenus();
+  if(wasHidden){m.hidden=false;document.getElementById(map[which][0]).setAttribute("aria-expanded","true");}
+}
+function closeMenus(){[["navBtn","navMenu"],["repBtn","repMenu"]].forEach(([b,mn])=>{const mm=document.getElementById(mn);if(mm)mm.hidden=true;const bb=document.getElementById(b);if(bb)bb.setAttribute("aria-expanded","false");});}
+document.addEventListener("click",e=>{if(!e.target.closest(".menu"))closeMenus();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenus();});
+function toggleSection(id){const sec=document.getElementById(id);if(!sec)return;const collapsed=sec.classList.toggle("collapsed");const btn=sec.querySelector(".sec-toggle");if(btn)btn.setAttribute("aria-expanded",String(!collapsed));if(!collapsed)requestAnimationFrame(growAll);}
+function expandSection(id){const sec=document.getElementById(id);if(!sec)return;sec.classList.remove("collapsed");const btn=sec.querySelector(".sec-toggle");if(btn)btn.setAttribute("aria-expanded","true");}
+function jumpTo(id){const el=document.getElementById(id);closeMenus();expandSection(id);if(el){requestAnimationFrame(growAll);el.scrollIntoView({block:"start"});}return false;}
+
+/* ===== SSP exports: print-to-PDF view + self-contained Word .docx ===== */
+const FIND_LABEL={met:"MET",notmet:"NOT MET",na:"N/A",attn:"MET (evidence incomplete)",inprogress:"IN PROGRESS"};
+const FIND_CLASS={met:"b-met",notmet:"b-notmet",na:"b-na",attn:"b-attn",inprogress:"b-prog"};
+const FIND_HEX={met:"047857",notmet:"B91C1C",na:"5A6478",attn:"B45309",inprogress:"2233AA"};
+const STAT_CLASS={met:"b-met",notmet:"b-notmet",na:"b-na","":"b-prog"};
+const STAT_HEX={met:"047857",notmet:"B91C1C",na:"5A6478","":"5A6478"};
+const SRC_FAR="https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21";
+const SRC_171="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final";
+const SRC_L1G="https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1v2.pdf";
+const SRC_L1S="https://dodcio.defense.gov/Portals/0/Documents/CMMC/ScopingGuideL1v2.pdf";
+function ctrlNum(id){return (id.split("-")[1]||id);}
+const BLUVI_ICON="data:image/png;base64,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";
+
+function collectSSP(){
+  const o=gatherOrg();
+  let met=0,pMet=0,pNot=0,pAttn=0,pNa=0,pProg=0;
+  PRACTICES.forEach(p=>{
+    p.obj.forEach(x=>{if(st[p.id].obj[x[0]]==="met")met++;});
+    const f=practiceFinding(p);
+    if(f==="met")pMet++;else if(f==="notmet")pNot++;else if(f==="attn")pAttn++;else if(f==="na")pNa++;else pProg++;
+  });
+  let posture;
+  if(pNot>0) posture="Not ready. "+pNot+" practice"+(pNot!==1?"s":"")+" not met. Level 1 is pass or fail with no POA&M, so every not-met objective must be closed before attestation.";
+  else if(pAttn>0) posture="Almost ready. "+pAttn+" practice"+(pAttn!==1?"s":"")+" objective-complete but missing recorded evidence.";
+  else if(pProg>0) posture="In progress. "+(pMet+pNa)+" of "+PRACTICES.length+" practices resolved so far.";
+  else posture="Ready. All "+PRACTICES.length+" practices are Met or justified N/A with evidence.";
+  const lvl={fci:"Level 1 (FCI only)",cui:"Handles CUI, so the scope is Level 2. Level 1 is documented here as the foundation that carries into Level 2.",unsure:"Not yet determined"}[scopeState.level]||"Not determined";
+  const fp=FP_LOCATIONS.filter(l=>scopeState.footprint[l.k]&&!l.cui);
+  const gaps=PRACTICES.filter(p=>{const f=practiceFinding(p);return f==="notmet"||f==="attn";});
+  return {o,notes:(scopeState.notes||"").trim(),level:scopeState.level,lvl,fp,gaps,met,total:TOTAL_OBJ,pMet,pNot,pAttn,pNa,pProg,posture,ahead:scopeState.includeAhead,aheadItems:AHEAD.map(a=>({title:a.title,ctrl:a.ctrl,cname:a.cname,fam:a.fam,status:aheadState[a.id].status,notes:aheadState[a.id].notes})),fprint:assessmentFingerprint(),generated:new Date().toISOString().slice(0,10)};
+}
+
+function buildSSPHtml(d){
+  const o=d.o;
+  const dc=[["Organization",o.company||"(not specified)"],["System or enclave",o.system||"(not specified)"],["Prepared by",o.by||"(not specified)"],["Assessment date",o.date||"(not specified)"],["Affirming senior official",o.official||"(not specified)"],["Date generated",d.generated],["Basis","FAR 52.204-21 (now 52.240-93), NIST SP 800-171A, DoD CMMC Level 1 Assessment Guide"]];
+  let h=`<div class="ssp-cover"><div class="ssp-owner">${esc(o.company||"(Organization)")}</div><div class="ssp-title">System Security Plan</div><div class="ssp-sub">CMMC Level 1 (FAR 52.204-21) Self-Assessment Documentation</div><table class="kv">${dc.map(r=>`<tr><td class="k">${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</table><p class="ssp-note">This is self-assessment documentation, not a certification, and is not affiliated with or endorsed by the DoD, the Cyber AB, or ISACA. This document records how the organization meets the 15 basic safeguarding requirements of FAR 52.204-21 (CMMC Level 1), expressed as 59 assessment objectives. A formal System Security Plan is NIST SP 800-171 control 3.12.4, which is a Level 2 requirement; presenting Level 1 in this form gives the foundation that carries into Level 2.</p><p class="ssp-credit">Prepared for SMBs, an open CMMC tool by BluVi LLC. bluvi.ai</p><p class="ssp-fp">Content fingerprint ${esc(d.fprint)}, generated ${esc(d.generated)}. The same answers always produce this code; if it differs from a copy you were given, the contents were changed.</p></div>`;
+  h+=`<h2 class="ssp-h">1. System Identification and Scope</h2><table class="kv"><tr><td class="k">Level determination</td><td>${esc(d.lvl)}</td></tr><tr><td class="k">Scope statement</td><td>${esc(d.notes||"(not documented)")}</td></tr><tr><td class="k">Assessment result</td><td>${d.met} of ${d.total} objectives marked Met</td></tr><tr><td class="k">Readiness</td><td>${esc(d.posture)}</td></tr></table>`;
+  h+=`<h3 class="ssp-fam">In-scope data footprint</h3>`;
+  h+=d.fp.length?`<table class="ssp-t"><tr><th style="width:62%">Where the data lives</th><th>Maps to practices</th></tr>${d.fp.map(l=>`<tr><td>${esc(l.label)}</td><td>${esc(l.maps)}</td></tr>`).join("")}</table>`:`<p class="ssp-ev">No data locations were mapped. Complete the Scope step to define the boundary.</p>`;
+  h+=`<h2 class="ssp-h">2. Control Implementation</h2><p class="ssp-note">17 practices, 59 assessment objectives. A practice is Met only when every objective is Met or justified N/A and evidence is recorded.</p><ul class="ssp-sources"><li>FAR 52.204-21 (now 52.240-93), the 15 safeguarding requirements: <a href="${SRC_FAR}">${SRC_FAR}</a></li><li>NIST SP 800-171 Rev 2, the controls Level 1 maps to: <a href="${SRC_171}">${SRC_171}</a>. CMMC uses Revision 2; NIST's page shows it withdrawn in favor of Revision 3, which CMMC has not yet adopted.</li><li>CMMC Level 1 Assessment Guide, the 59 objectives: <a href="${SRC_L1G}">${SRC_L1G}</a></li><li>CMMC Level 1 Scoping Guide, what is in scope: <a href="${SRC_L1S}">${SRC_L1S}</a></li></ul>`;
+  FAMILIES.forEach(f=>{
+    h+=`<h3 class="ssp-fam">${esc(f.abbrev)}: ${esc(f.name)}</h3>`;
+    f.practices.forEach(p=>{
+      const fnd=practiceFinding(p);
+      h+=`<div class="ssp-ctrl"><h4><span class="pid">${esc(p.id)}</span> ${esc(p.name)} <span class="badge ${FIND_CLASS[fnd]}">${esc(FIND_LABEL[fnd])}</span></h4><p class="ssp-req"><b>Requirement.</b> ${esc(p.stmt)}</p><table class="ssp-t"><tr><th style="width:6%">Obj</th><th style="width:48%">Assessment objective</th><th style="width:16%">Status</th><th style="width:30%">Why / how</th></tr>${p.obj.map(ob=>{const s=st[p.id].obj[ob[0]]||"";return `<tr><td>${ob[0]}</td><td>${esc(cap(ob[1]))}</td><td><span class="badge ${STAT_CLASS[s]}">${esc(objWord(s))}</span></td><td>${esc((st[p.id].objNotes[ob[0]]||"").trim())}</td></tr>`;}).join("")}</table><p class="ssp-ev"><b>Evidence.</b> ${esc(st[p.id].evidence.trim()||"(none recorded)")}</p><p class="ssp-src">Source: <a href="${SRC_171}">NIST SP 800-171 Rev 2, requirement ${ctrlNum(p.id)}</a> &middot; <a href="${SRC_FAR}">FAR 52.204-21</a></p></div>`;
+    });
+  });
+  h+=`<h2 class="ssp-h">3. Gaps to Close Before Attestation</h2>`;
+  if(!d.gaps.length) h+=`<p class="ssp-ev">None. Every applicable practice is Met or justified N/A with evidence. Document, post your score in SPRS, and have your senior official affirm.</p>`;
+  else h+=`<table class="ssp-t"><tr><th style="width:26%">Practice</th><th style="width:18%">Finding</th><th>Action to close</th></tr>${d.gaps.map(p=>{const fnd=practiceFinding(p);const nm=p.obj.filter(x=>st[p.id].obj[x[0]]==="notmet").map(x=>x[0]);const act=[];if(nm.length)act.push("Resolve objectives not met: "+nm.join(", ")+".");if(!st[p.id].evidence.trim())act.push("Record supporting evidence.");if(p.fix)act.push(stripTags(p.fix));return `<tr><td>${esc(p.id)} ${esc(p.name)}</td><td><span class="badge ${FIND_CLASS[fnd]}">${esc(FIND_LABEL[fnd])}</span></td><td>${esc(act.join(" "))}</td></tr>`;}).join("")}</table>`;
+  if(o.advisor&&o.advisor.trim()) h+=`<h2 class="ssp-h">Advisor notes</h2><p class="ssp-ev">${esc(o.advisor.trim())}</p>`;
+  h+=`<h2 class="ssp-h">4. Affirmation</h2><p class="ssp-ev">I affirm that the information in this plan is accurate and that the organization meets the CMMC Level 1 requirements recorded as Met, to the best of my knowledge. Level 1 is reassessed and re-affirmed in SPRS annually.</p><table class="sig"><tr><td>Affirming senior official: ${esc(o.official||"____________________________")}</td></tr><tr><td>Signature: ____________________________________     Date: __________________</td></tr></table>`;
+  if(d.ahead) h+=`<h2 class="ssp-h">Appendix: Looking Ahead (optional planning)</h2><p class="ssp-note">Not part of the Level 1 requirement set. CMMC is assessed against NIST SP 800-171 Revision 2 today; Revision 3 is finalized but not yet required under a DoD class deviation. These habits map to Revision 3 controls and ease a future move to Level 2.</p><table class="ssp-t"><tr><th style="width:30%">Habit</th><th style="width:26%">Maps to Rev 3</th><th style="width:14%">Status</th><th>Notes</th></tr>${d.aheadItems.map(a=>`<tr><td>${esc(a.title)}</td><td>${esc(a.ctrl)} ${esc(a.cname)}</td><td>${esc(AH_STATUS[a.status]||"Not started")}</td><td>${esc((a.notes||"").trim()||"(none)")}</td></tr>`).join("")}</table><p class="ssp-ev">Revision 3 is at csrc.nist.gov/pubs/sp/800/171/r3/final. Skip any FedRAMP-related step unless you actually handle CUI.</p>`;
+  return h;
+}
+function printSSP(){
+  closeMenus();
+  document.getElementById("sspDoc").innerHTML=buildSSPHtml(collectSSP());
+  document.body.classList.add("ssp-print");
+  const done=function(){document.body.classList.remove("ssp-print");window.removeEventListener("afterprint",done);};
+  window.addEventListener("afterprint",done);
+  setTimeout(function(){window.print();},30);
+}
+
+/* ---- Word .docx (hand-built OOXML, store-only zip, no libraries) ---- */
+function xe(s){return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c];});}
+function dpara(text,opt){opt=opt||{};
+  let ppr="";
+  if(opt.style)ppr+='<w:pStyle w:val="'+opt.style+'"/>';
+  else ppr+='<w:spacing w:after="'+(opt.after!=null?opt.after:120)+'"'+(opt.before!=null?(' w:before="'+opt.before+'"'):'')+'/>';
+  if(opt.align)ppr+='<w:jc w:val="'+opt.align+'"/>';
+  const common=(opt.color?('<w:color w:val="'+opt.color+'"/>'):'')+(opt.size?('<w:sz w:val="'+opt.size+'"/>'):'');
+  const pprXml=ppr?("<w:pPr>"+ppr+"</w:pPr>"):"";
+  let runs="";
+  if(opt.label)runs+='<w:r><w:rPr><w:b/>'+common+'</w:rPr><w:t xml:space="preserve">'+xe(opt.label)+'</w:t></w:r>';
+  const mainrpr=(opt.bold?'<w:b/>':'')+common;
+  runs+='<w:r>'+(mainrpr?('<w:rPr>'+mainrpr+'</w:rPr>'):'')+'<w:t xml:space="preserve">'+xe(text==null?'':text)+'</w:t></w:r>';
+  return '<w:p>'+pprXml+runs+'</w:p>';
+}
+function pageBreak(){return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';}
+function dcell(text,opt){opt=opt||{};
+  let rpr="";if(opt.bold)rpr+="<w:b/>";if(opt.color)rpr+='<w:color w:val="'+opt.color+'"/>';if(opt.size)rpr+='<w:sz w:val="'+opt.size+'"/>';
+  const rprXml=rpr?("<w:rPr>"+rpr+"</w:rPr>"):"";
+  const lines=Array.isArray(text)?text:[text];
+  const paras=lines.map(function(t){return '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r>'+rprXml+'<w:t xml:space="preserve">'+xe(t==null?"":t)+'</w:t></w:r></w:p>';}).join("");
+  const shd=opt.shade?'<w:shd w:val="clear" w:color="auto" w:fill="'+opt.shade+'"/>':"";
+  return '<w:tc><w:tcPr><w:tcW w:w="'+(opt.w||2000)+'" w:type="dxa"/>'+shd+'<w:tcMar><w:top w:w="60" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tcMar><w:vAlign w:val="top"/></w:tcPr>'+paras+'</w:tc>';
+}
+function drow(cells){return "<w:tr>"+cells.join("")+"</w:tr>";}
+function dtable(rows,widths){
+  const grid=widths.map(function(w){return '<w:gridCol w:w="'+w+'"/>';}).join("");
+  const bd='<w:tblBorders><w:top w:val="single" w:sz="4" w:color="D0D7E2"/><w:left w:val="single" w:sz="4" w:color="D0D7E2"/><w:bottom w:val="single" w:sz="4" w:color="D0D7E2"/><w:right w:val="single" w:sz="4" w:color="D0D7E2"/><w:insideH w:val="single" w:sz="4" w:color="D0D7E2"/><w:insideV w:val="single" w:sz="4" w:color="D0D7E2"/></w:tblBorders>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/>'+bd+'<w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+grid+'</w:tblGrid>'+rows.join("")+'</w:tbl><w:p><w:pPr><w:spacing w:after="40"/></w:pPr></w:p>';
+}
+function buildDocBody(d){
+  const o=d.o; let x="";
+  x+=dpara(o.company||"(Organization)",{bold:true,size:40,color:"0C1020",after:40});
+  x+=dpara("System Security Plan",{style:"Title"});
+  x+=dpara("CMMC Level 1 (FAR 52.204-21) Self-Assessment Documentation",{size:24,color:"2233AA",after:240});
+  const dc=[["Organization",o.company||"(not specified)"],["System or enclave",o.system||"(not specified)"],["Prepared by",o.by||"(not specified)"],["Assessment date",o.date||"(not specified)"],["Affirming senior official",o.official||"(not specified)"],["Date generated",d.generated],["Basis","FAR 52.204-21 (now 52.240-93), NIST SP 800-171A, DoD CMMC Level 1 Assessment Guide"]];
+  x+=dtable(dc.map(function(r){return drow([dcell(r[0],{w:3200,bold:true,shade:"F4F7FC"}),dcell(r[1],{w:6160})]);}),[3200,6160]);
+  x+=dpara("This is self-assessment documentation, not a certification, and is not affiliated with or endorsed by the DoD, the Cyber AB, or ISACA. This document records how the organization meets the 15 basic safeguarding requirements of FAR 52.204-21 (CMMC Level 1), expressed as 59 assessment objectives. A formal System Security Plan is NIST SP 800-171 control 3.12.4, which is a Level 2 requirement; presenting Level 1 in this form gives the foundation that carries into Level 2.",{size:16,color:"5A6478",before:120});
+  x+=dpara("Prepared for SMBs, an open CMMC tool by BluVi LLC. bluvi.ai",{size:15,color:"5A6478",after:0});
+  x+=dpara("Content fingerprint "+d.fprint+", generated "+d.generated+". The same answers always produce this code; if it differs from a copy you were given, the contents were changed.",{size:13,color:"94A3B8",before:60});
+  x+=pageBreak();
+  x+=dpara("1. System Identification and Scope",{style:"Heading1"});
+  x+=dtable([
+    drow([dcell("Level determination",{w:3200,bold:true,shade:"F4F7FC"}),dcell(d.lvl,{w:6160})]),
+    drow([dcell("Scope statement",{w:3200,bold:true,shade:"F4F7FC"}),dcell(d.notes||"(not documented)",{w:6160})]),
+    drow([dcell("Assessment result",{w:3200,bold:true,shade:"F4F7FC"}),dcell(d.met+" of "+d.total+" objectives marked Met",{w:6160})]),
+    drow([dcell("Readiness",{w:3200,bold:true,shade:"F4F7FC"}),dcell(d.posture,{w:6160})])
+  ],[3200,6160]);
+  x+=dpara("In-scope data footprint",{style:"Heading2"});
+  if(d.fp.length) x+=dtable([drow([dcell("Where the data lives",{w:6160,bold:true,shade:"EEF2FA"}),dcell("Maps to practices",{w:3200,bold:true,shade:"EEF2FA"})])].concat(d.fp.map(function(l){return drow([dcell(l.label,{w:6160}),dcell(l.maps,{w:3200})]);})),[6160,3200]);
+  else x+=dpara("No data locations were mapped. Complete the Scope step to define the boundary.",{});
+  x+=dpara("2. Control Implementation",{style:"Heading1"});
+  x+=dpara("17 practices, 59 assessment objectives. A practice is Met only when every objective is Met or justified N/A and evidence is recorded.",{size:16,color:"5A6478"});
+  x+=dpara("Authoritative sources",{bold:true,size:18,after:40});
+  x+=dpara(SRC_FAR,{label:"FAR 52.204-21 (now 52.240-93), the 15 safeguarding requirements: ",size:15,color:"5A6478",after:20});
+  x+=dpara(SRC_171,{label:"NIST SP 800-171 Rev 2, the controls Level 1 maps to: ",size:15,color:"5A6478",after:20});
+  x+=dpara("CMMC uses Revision 2. NIST's page shows it withdrawn in favor of Revision 3, which CMMC has not yet adopted, so Revision 2 remains the correct baseline.",{size:14,color:"94A3B8",after:20});
+  x+=dpara(SRC_L1G,{label:"CMMC Level 1 Assessment Guide, the 59 objectives: ",size:15,color:"5A6478",after:20});
+  x+=dpara(SRC_L1S,{label:"CMMC Level 1 Scoping Guide, what is in scope: ",size:15,color:"5A6478",after:140});
+  FAMILIES.forEach(function(f){
+    x+=dpara(f.abbrev+": "+f.name,{style:"Heading2"});
+    f.practices.forEach(function(p){
+      const fnd=practiceFinding(p);
+      x+=dpara(p.id+"  "+p.name,{style:"Heading3"});
+      x+=dpara(FIND_LABEL[fnd],{label:"Finding: ",color:FIND_HEX[fnd],bold:true,size:20,after:40});
+      x+=dpara(p.stmt,{label:"Requirement. ",size:20,after:60});
+      const header=drow([dcell("Obj",{w:720,bold:true,shade:"EEF2FA"}),dcell("Assessment objective",{w:4380,bold:true,shade:"EEF2FA"}),dcell("Status",{w:1500,bold:true,shade:"EEF2FA"}),dcell("Why / how",{w:2760,bold:true,shade:"EEF2FA"})]);
+      const rows=[header].concat(p.obj.map(function(ob){const s=st[p.id].obj[ob[0]]||"";return drow([dcell(ob[0],{w:720}),dcell(cap(ob[1]),{w:4380}),dcell(objWord(s),{w:1500,bold:true,color:STAT_HEX[s]}),dcell((st[p.id].objNotes[ob[0]]||"").trim(),{w:2760})]);}));
+      x+=dtable(rows,[720,4380,1500,2760]);
+      x+=dpara(st[p.id].evidence.trim()||"(none recorded)",{label:"Evidence. ",size:18,after:60});
+      x+=dpara("NIST SP 800-171 Rev 2, requirement "+ctrlNum(p.id)+"; FAR 52.204-21.",{label:"Source. ",size:15,color:"5A6478",after:140});
+    });
+  });
+  x+=dpara("3. Gaps to Close Before Attestation",{style:"Heading1"});
+  if(!d.gaps.length) x+=dpara("None. Every applicable practice is Met or justified N/A with evidence. Document, post your score in SPRS, and have your senior official affirm.",{});
+  else{
+    const gh=drow([dcell("Practice",{w:2700,bold:true,shade:"EEF2FA"}),dcell("Finding",{w:1800,bold:true,shade:"EEF2FA"}),dcell("Action to close",{w:4860,bold:true,shade:"EEF2FA"})]);
+    const grows=[gh].concat(d.gaps.map(function(p){const fnd=practiceFinding(p);const nm=p.obj.filter(function(z){return st[p.id].obj[z[0]]==="notmet";}).map(function(z){return z[0];});const act=[];if(nm.length)act.push("Resolve objectives not met: "+nm.join(", ")+".");if(!st[p.id].evidence.trim())act.push("Record supporting evidence.");if(p.fix)act.push(stripTags(p.fix));return drow([dcell(p.id+" "+p.name,{w:2700}),dcell(FIND_LABEL[fnd],{w:1800,bold:true,color:FIND_HEX[fnd]}),dcell(act.join(" "),{w:4860})]);}));
+    x+=dtable(grows,[2700,1800,4860]);
+  }
+  if(o.advisor&&o.advisor.trim()){x+=dpara("Advisor notes",{style:"Heading1"});x+=dpara(o.advisor.trim(),{});}
+  x+=dpara("4. Affirmation",{style:"Heading1"});
+  x+=dpara("I affirm that the information in this plan is accurate and that the organization meets the CMMC Level 1 requirements recorded as Met, to the best of my knowledge. Level 1 is reassessed and re-affirmed in SPRS annually.",{after:160});
+  x+=dpara("Affirming senior official: "+(o.official||"____________________________"),{after:160});
+  x+=dpara("Signature: ____________________________________     Date: __________________",{});
+  if(d.ahead){
+    x+=dpara("Appendix: Looking Ahead (optional planning)",{style:"Heading1"});
+    x+=dpara("Not part of the Level 1 requirement set. CMMC is assessed against NIST SP 800-171 Revision 2 today; Revision 3 is finalized but not yet required under a DoD class deviation. These habits map to Revision 3 controls and ease a future move to Level 2.",{size:16,color:"5A6478"});
+    var ahr=[drow([dcell("Habit",{w:3000,bold:true,shade:"EEF2FA"}),dcell("Maps to Rev 3",{w:2600,bold:true,shade:"EEF2FA"}),dcell("Status",{w:1500,bold:true,shade:"EEF2FA"}),dcell("Notes",{w:2260,bold:true,shade:"EEF2FA"})])];
+    d.aheadItems.forEach(function(a){ahr.push(drow([dcell(a.title,{w:3000}),dcell(a.ctrl+" "+a.cname,{w:2600}),dcell(AH_STATUS[a.status]||"Not started",{w:1500}),dcell((a.notes||"").trim()||"(none)",{w:2260})]));});
+    x+=dtable(ahr,[3000,2600,1500,2260]);
+    x+=dpara("Revision 3 is at https://csrc.nist.gov/pubs/sp/800/171/r3/final. Skip any FedRAMP-related step unless you actually handle CUI.",{size:15,color:"5A6478",before:60});
+  }
+  return x;
+}
+const DOCX_CT='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>';
+const DOCX_RELS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>';
+function docxCore(d){const who=xe(d.o.by||d.o.company||"");const t=xe("System Security Plan, "+(d.o.company||"Organization"));const now=d.generated+"T00:00:00Z";return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>'+t+'</dc:title><dc:subject>CMMC Level 1 Self-Assessment</dc:subject><dc:creator>'+who+'</dc:creator><cp:keywords>CMMC, Level 1, FAR 52.204-21, FAR 52.240-93, NIST SP 800-171</cp:keywords><cp:lastModifiedBy>'+who+'</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">'+now+'</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">'+now+'</dcterms:modified></cp:coreProperties>';}
+function docxApp(d){return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>CMMC for SMBs by BluVi LLC (bluvi.ai)</Application><Company>'+xe(d.o.company||"")+'</Company></Properties>';}
+const DOCX_DOCRELS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>';
+const DOCX_STYLES='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="120"/></w:pPr><w:rPr><w:b/><w:color w:val="0C1020"/><w:sz w:val="56"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="2" w:color="2233AA"/></w:pBdr><w:spacing w:before="280" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E2D5A"/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:spacing w:before="200" w:after="60"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="2233AA"/><w:sz w:val="25"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="160" w:after="20"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:sz w:val="22"/></w:rPr></w:style></w:styles>';
+function docxFooter(){const rp='<w:rPr><w:color w:val="94A3B8"/><w:sz w:val="16"/></w:rPr>';return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/>'+rp+'</w:pPr><w:r>'+rp+'<w:t xml:space="preserve">System Security Plan  |  CMMC Level 1  |  Page </w:t></w:r><w:r>'+rp+'<w:fldChar w:fldCharType="begin"/></w:r><w:r>'+rp+'<w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r>'+rp+'<w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>';}
+function buildDocumentXml(d){
+  const sect='<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>'+buildDocBody(d)+sect+'</w:body></w:document>';
+}
+function crc32(bytes){let crc=0xFFFFFFFF;for(let i=0;i<bytes.length;i++){crc^=bytes[i];for(let k=0;k<8;k++){crc=(crc&1)?((crc>>>1)^0xEDB88320):(crc>>>1);}}return (crc^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder();
+  function u16(v){return [v&0xFF,(v>>>8)&0xFF];}
+  function u32(v){return [v&0xFF,(v>>>8)&0xFF,(v>>>16)&0xFF,(v>>>24)&0xFF];}
+  const chunks=[],central=[];let offset=0;
+  files.forEach(function(f){
+    const nameB=enc.encode(f.name),data=enc.encode(f.data),crc=crc32(data);
+    const local=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nameB.length),u16(0));
+    chunks.push(Uint8Array.from(local),nameB,data);
+    central.push({nameB:nameB,crc:crc,size:data.length,offset:offset});
+    offset+=local.length+nameB.length+data.length;
+  });
+  const cdStart=offset,cdChunks=[];
+  central.forEach(function(c){
+    const hh=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c.crc),u32(c.size),u32(c.size),u16(c.nameB.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(c.offset));
+    cdChunks.push(Uint8Array.from(hh),c.nameB);
+    offset+=hh.length+c.nameB.length;
+  });
+  const cdSize=offset-cdStart;
+  const eocd=[].concat(u32(0x06054b50),u16(0),u16(0),u16(central.length),u16(central.length),u32(cdSize),u32(cdStart),u16(0));
+  const all=chunks.concat(cdChunks,[Uint8Array.from(eocd)]);
+  const total=all.reduce(function(n,a){return n+a.length;},0);
+  const out=new Uint8Array(total);let pos=0;
+  all.forEach(function(a){out.set(a,pos);pos+=a.length;});
+  return out;
+}
+function buildDocxBytes(d){
+  return zipStore([
+    {name:"[Content_Types].xml",data:DOCX_CT},
+    {name:"_rels/.rels",data:DOCX_RELS},
+    {name:"docProps/core.xml",data:docxCore(d)},
+    {name:"docProps/app.xml",data:docxApp(d)},
+    {name:"word/_rels/document.xml.rels",data:DOCX_DOCRELS},
+    {name:"word/styles.xml",data:DOCX_STYLES},
+    {name:"word/footer1.xml",data:docxFooter()},
+    {name:"word/document.xml",data:buildDocumentXml(d)}
+  ]);
+}
+function downloadDocx(){
+  closeMenus();
+  const d=collectSSP();
+  const blob=new Blob([buildDocxBytes(d)],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+  const a=document.createElement("a");
+  const slug=(d.o.company||"cmmc-l1").replace(/[^a-z0-9]+/gi,"-").toLowerCase();
+  a.href=URL.createObjectURL(blob);a.download=slug+"-ssp-"+d.generated+".docx";a.click();URL.revokeObjectURL(a.href);
+  toast("Word SSP downloaded");
+}
+
+const AHEAD=[
+  {id:"AH-1",ctrl:"03.15.03",fam:"Planning (PL)",cname:"rules of behavior",title:"Write a one-page acceptable-use policy",desc:"Have staff read and acknowledge the basic rules for using your systems. Low effort, useful at any level."},
+  {id:"AH-2",ctrl:"03.16.02",fam:"System and Services Acquisition (SA)",cname:"unsupported system components",title:"List your end-of-life and unsupported tech",desc:"Note any software or hardware past vendor support, then replace it or write down why you accept the risk. Good security on its own."},
+  {id:"AH-3",ctrl:"03.16.03",fam:"System and Services Acquisition (SA)",cname:"external system services",title:"Write down who touches your data",desc:"List your cloud apps and your IT or managed-service providers, and what each side is responsible for. Skip the FedRAMP part unless you actually handle CUI."}
+];
+const aheadState={};AHEAD.forEach(a=>{aheadState[a.id]={status:"",notes:""};});
+const AH_STATUS={planned:"Planned",inprogress:"In progress",inplace:"In place"};
+const AH_STEPS=["planned","inprogress","inplace"];
+function setAhead(id,v){if(!aheadState[id])return;aheadState[id].status=(aheadState[id].status===v?"":v);AH_STEPS.forEach(k=>{const b=document.getElementById("ah_"+id+"_"+k);if(b)b.setAttribute("aria-pressed",String(aheadState[id].status===k));});markDirty();}
+function setAheadNote(id,v){if(aheadState[id]){aheadState[id].notes=v;markDirty();}}
+function renderAhead(){const root=document.getElementById("aheadList");if(!root)return;root.innerHTML=AHEAD.map(a=>{const s=aheadState[a.id]||{status:"",notes:""};return `<div class="ah-item"><div class="ah-head"><strong>${esc(a.title)}</strong></div><div class="ah-map">Maps to NIST SP 800-171 Rev 3 &middot; ${esc(a.fam)} &middot; ${esc(a.ctrl)} ${esc(a.cname)}</div><p class="ah-desc">${esc(a.desc)}</p><div class="seg" role="group" aria-label="${esc(a.title)} status">`+AH_STEPS.map(k=>`<button data-v="${k}" id="ah_${a.id}_${k}" aria-pressed="${s.status===k}" onclick="setAhead('${a.id}','${k}')">${AH_STATUS[k]}</button>`).join("")+`</div><textarea class="onote" aria-label="${esc(a.title)} notes" placeholder="How or where (optional)" oninput="setAheadNote('${a.id}',this.value)">${esc(s.notes||"")}</textarea></div>`;}).join("");}
+render();renderAhead();renderLevelBox();renderFootprint();updateLifecycle();
+document.querySelectorAll(".blogo").forEach(function(i){i.src=BLUVI_ICON;});
+(function(){var de=document.getElementById("org_date");if(de&&!de.value){de.value=new Date().toISOString().slice(0,10);updateLifecycle();}})();
+</script>
+</body>
+</html>
