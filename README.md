@@ -4,7 +4,7 @@ A free, offline, open-source tool that walks a small or medium-sized business th
 
 It runs entirely in your browser from a single file, collects no data, and makes no network calls. 
 
-**Use it here:** download [`index.html`](https://github.com/bluvibytes/CMMC-for-SMBs/blob/main/index.html) using the download button on that page. The code is open, so review it first if you like, then open the downloaded file in any modern browser. That single file is the entire tool: it runs locally on your computer and needs no internet connection.
+**Getting the tool:** download [`index.html`](https://github.com/bluvibytes/CMMC-for-SMBs/blob/main/index.html) using the download button on that page. The code is open, so review it first if you like, then open the downloaded file in any modern browser. That single file is the entire tool: it runs locally on your computer and needs no internet connection.
 
 ---
 
@@ -29,6 +29,8 @@ A note on naming: Executive Order 14347 (September 2025) authorized "Department 
 - **Business owners and IT leads** at companies that hold FCI and want to understand Level 1 before spending money on it.
 - **Companies preparing for Level 2** who want to document the Level 1 foundation first.
 - **Consultants and RPs** who want a vendor-neutral, plain-English reference to share with clients. See [Licensing and reuse](#licensing-and-reuse).
+
+## How to use it
 
 ## How to use it
 
