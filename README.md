@@ -1,8 +1,10 @@
 # CMMC for SMBs: Level 1 Self-Assessment Tool
 
-A free, offline, open-source tool that walks a small or medium-sized business through a CMMC Level 1 self-assessment in plain English. It runs entirely in your browser from a single file, collects no data, and makes no network calls. It is built and maintained by [BluVi LLC](https://bluvi.ai).
+A free, offline, open-source tool that walks a small or medium-sized business through a CMMC Level 1 self-assessment in plain English. 
 
-**Use it here:** open `index.html` in any modern browser, or visit the hosted version if one is published for this repository.
+It runs entirely in your browser from a single file, collects no data, and makes no network calls. 
+
+**Use it here:** open `index.html` from wiin any modern browser for this repository.
 
 ---
 
