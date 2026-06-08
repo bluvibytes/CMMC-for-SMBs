@@ -32,8 +32,6 @@ A note on naming: Executive Order 14347 (September 2025) authorized "Department 
 
 ## How to use it
 
-## How to use it
-
 1. **Open the file.** Download `index.html` and open it in your browser. Nothing installs. You can work offline.
 2. **Enter your details.** Used only to label your exports. They live in your saved file and are never sent anywhere.
 3. **Set your scope.** Say whether you handle FCI or CUI, then map where your data lives. Shrinking that footprint is the single biggest cost saver, because every system FCI touches has to meet all 17 practices.
