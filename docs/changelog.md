@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to this tool are recorded here.
+All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Validation run on each release: extract the script and run a Node syntax check, confirm zero em dashes, confirm the Content-Security-Policy is present, and audit every outbound link against its authoritative source.
 
-## [1.1.0] - 2026-06-09
+## [1.1.0](https://github.com/bluvibytes/cmmc-for-smbs/releases/tag/v1.1.0) - 2026-06-09
 
 ### Changed
 - Reworked the top progress indicator. Red no longer appears in the bar. It is now a single calm fill on a neutral track, so it reads as how far through the checklist you are, not as a pass or fail score. Red is reserved for an objective you deliberately mark Not met.
@@ -19,10 +19,16 @@ Validation run on each release: extract the script and run a Node syntax check, 
 - Each assessment objective now shows its official identifier above the objective text, for example `AC.L1-3.1.1[b]`, matching how the DoD Level 1 Assessment Guide and an assessor cite it. This keeps context when you are scrolled deep into a control.
 - "May also help cover" notes in the documentation guidance, flagging where one piece of evidence supports more than one practice (identity, malicious code protection, physical access).
 
+### Documentation
+- Added `docs/how-level-1-works.md`, a plain-language primer: FCI vs CUI, self-assessment and the SPRS affirmation, no POA&M so all 17 practices must be Met, the False Claims Act stakes behind the affirmation, record retention, the Level 1 floor vs good practice, and a worked single-control walkthrough.
+- Added `docs/examples/acme-machine-shop-ssp.md`, an example System Security Plan for a fictional shop, a faithful mirror of the tool's export, with two honest gaps.
+- Added `docs/examples/acme-evidence-pack.md`, the eight supporting documents the SSP references, with a two-kinds-of-evidence note and a Level 1 floor clarification.
+- Added `docs/examples/acme-asset-inventory.md`, an example asset and device inventory with in-scope vs out-of-scope reasoning.
+
 ### Fixed
 - Corrected the repository link in the footer to the lowercase repository path.
 
-## [1.0.0] - 2026-06-07
+## [1.0.0](https://github.com/bluvibytes/cmmc-for-smbs/releases/tag/v1.0.0) - 2026-06-07
 
 ### Added
 - Initial public release. A free, open source, offline, single file CMMC Level 1 self-assessment for small and mid-sized businesses.
@@ -31,6 +37,3 @@ Validation run on each release: extract the script and run a Node syntax check, 
 - Local exports: a System Security Plan in Word and print-to-PDF form, including a gaps-to-close section, plus a CSV for tracking. Everything is generated in the browser.
 - No network calls (Content-Security-Policy locked to `connect-src 'none'`), no browser storage, and no data collection. Authoritative .gov, NIST, and CFR sources throughout.
 - A content fingerprint on the exported plan so a recipient can tell whether the contents were altered.
-
-[1.1.0]: https://github.com/bluvibytes/cmmc-for-smbs/releases/tag/v1.1.0
-[1.0.0]: https://github.com/bluvibytes/cmmc-for-smbs/releases/tag/v1.0.0
