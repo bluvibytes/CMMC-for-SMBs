@@ -33,12 +33,15 @@
   .skip:focus{left:0}
 
   .topbar{position:sticky;top:0;z-index:50;background:rgba(247,249,252,.93);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line)}
-  .progress{height:4px;width:100%;background:var(--line);overflow:hidden}
-  .progress>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-bright));transition:width .25s ease}
-  #progwrap[data-s="ok"] .progress>span{background:var(--ok)}
+  .progress{height:10px;width:100%;background:var(--line);overflow:hidden;display:flex}
+  .progress>span{display:block;height:100%;width:0;transition:width .25s ease}
+  .progress .seg-ok{background:var(--accent)}
+  .progress .seg-warn{background:var(--warn)}
+  .progress .seg-bad{background:var(--bad)}
   .status{display:flex;align-items:center;gap:10px;padding:10px 0 2px;flex-wrap:wrap}
   .status .count{font-weight:650;color:var(--ink);font-size:15px}
   .status .pct{font:600 12px/1 var(--mono);color:var(--muted)}
+  .objdetail{font:600 11px/1 var(--mono);color:var(--faint)}
   .vstatus{font:600 11px/1 var(--mono);letter-spacing:.04em;padding:5px 10px;border-radius:var(--r-pill);background:var(--bg);border:1px solid var(--line);color:var(--muted)}
   .vstatus[data-s="ok"]{background:var(--ok-weak);color:var(--ok-ink);border-color:var(--ok-line)}
   .vstatus[data-s="bad"]{background:var(--bad-weak);color:var(--bad-ink);border-color:var(--bad-line)}
@@ -213,6 +216,7 @@
   .obj+.obj{border-top:1px dashed var(--line)}
   .oletter{flex:0 0 auto;width:22px;height:22px;border-radius:var(--r-pill);background:var(--bg);border:1px solid var(--line);font:600 11px/22px var(--mono);text-align:center;color:var(--muted)}
   .ogrow{min-width:0;flex:1 1 auto}
+  .oid{font:600 10px/1 var(--mono);color:var(--accent);letter-spacing:.02em;margin-bottom:4px}
   .otext{font-size:14px}
   .oplain{color:var(--muted);font-size:13px;margin-top:3px}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin:8px 0 0}
@@ -351,7 +355,7 @@
 <a class="skip" href="#main">Skip to content</a>
 
 <div class="topbar" id="progwrap">
-  <div class="progress" id="progress" role="progressbar" aria-label="Objectives resolved" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="bar"></span></div>
+  <div class="progress" id="progress" role="progressbar" aria-label="Assessment progress" aria-valuemin="0" aria-valuemax="59" aria-valuenow="0"><span class="seg-ok" id="segOk"></span><span class="seg-warn" id="segWarn"></span><span class="seg-bad" id="segBad"></span></div>
   <div class="wrap">
     <div class="status">
       <span class="count" id="countText">0 of 59 objectives met</span>
@@ -748,6 +752,24 @@ const FAMILIES=[
 const PRACTICES=[];FAMILIES.forEach(f=>f.practices.forEach(p=>PRACTICES.push(p)));
 const TOTAL_OBJ=PRACTICES.reduce((n,p)=>n+p.obj.length,0); // 59
 
+/* ---- where one artifact tends to cover more than one control (hedged, evidence-dependent) ---- */
+const SHARED={
+ "AC.L1-3.1.1":"The same user and device list and access policy also support AC.L1-3.1.2 and IA.L1-3.5.1, if they show who is authorized and what each person may do.",
+ "AC.L1-3.1.2":"Your access policy and account list here usually overlap with AC.L1-3.1.1 and IA.L1-3.5.1.",
+ "AC.L1-3.1.20":"Your VPN or Conditional Access and MFA settings overlap with IA.L1-3.5.2.",
+ "IA.L1-3.5.1":"A single user-account list can also support AC.L1-3.1.1 and AC.L1-3.1.2, if it shows who is authorized and their access level.",
+ "IA.L1-3.5.2":"Your MFA configuration here also helps cover the external-connection control AC.L1-3.1.20, if remote access requires MFA.",
+ "PE.L1-3.10.1":"Your key and badge records under PE.L1-3.10.5 also help show this.",
+ "PE.L1-3.10.3":"Your visitor log under PE.L1-3.10.4 is the proof for this one too.",
+ "PE.L1-3.10.4":"The same visitor log supports PE.L1-3.10.3.",
+ "PE.L1-3.10.5":"Your key and badge list also helps cover PE.L1-3.10.1, and collecting keys at offboarding ties to AC.L1-3.1.1.",
+ "SC.L1-3.13.1":"Your network description and firewall config may also inform SC.L1-3.13.5.",
+ "SC.L1-3.13.5":"Your network diagram here overlaps with SC.L1-3.13.1.",
+ "SI.L1-3.14.2":"The same anti-malware product, settings, and screenshots usually cover SI.L1-3.14.4 and SI.L1-3.14.5 too.",
+ "SI.L1-3.14.4":"Shares evidence with SI.L1-3.14.2 and SI.L1-3.14.5, since it is the same anti-malware tool.",
+ "SI.L1-3.14.5":"Shares evidence with SI.L1-3.14.2 and SI.L1-3.14.4, since it is the same anti-malware tool."
+};
+
 const st={};
 PRACTICES.forEach(p=>{const o={},on={};p.obj.forEach(x=>{o[x[0]]="";on[x[0]]="";});st[p.id]={obj:o,objNotes:on,notes:"",evidence:"",updatedAt:"",updatedBy:""};});
 const scopeState={level:"",notes:"",footprint:{},includeAhead:false};
@@ -892,6 +914,7 @@ function render(){
       p.obj.forEach(o=>{
         const cur=st[p.id].obj[o[0]];
         objHtml+=`<div class="obj"><div class="oletter">${o[0]}</div><div class="ogrow">`+
+          `<div class="oid">${p.id}[${o[0]}]</div>`+
           `<div class="otext">${esc(cap(o[1]))}</div>`+
           `<div class="oplain"><b>In plain terms:</b> ${esc(o[2])}</div>`+
           `<div class="seg" role="group" aria-label="${p.id} objective ${o[0]}">`+
@@ -910,7 +933,7 @@ function render(){
         (p.ref?`<div class="refnote"><b>Heads-up:</b> ${p.ref}</div>`:"")+
         `<div class="psrc"><a href="https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1v2.pdf" target="_blank" rel="noopener noreferrer">CMMC Level 1 Assessment Guide</a> &middot; NIST SP 800-171 Rev 2 ${p.id.split("-")[1]} &middot; <a href="https://www.ecfr.gov/current/title-48/chapter-1/subchapter-H/part-52/subpart-52.2/section-52.204-21" target="_blank" rel="noopener noreferrer">FAR 52.204-21</a></div>`+
         objHtml+
-        ((p.ev||p.fix)?`<div class="docblock"><div class="docblock-h">What to document, and how</div><p class="tipnote">Meeting a practice is more than doing it or saying you do. Keep real documentation, a short written policy or procedure where one fits, in final form (a draft does not count) and kept current. Then back it with proof the practice is actually in place: a screenshot, a log, an export, or a current list. A verbal claim is not evidence. Most small businesses already run the controls; they fail because they cannot show the written policy and the proof behind it.</p>${p.ev?`<p><b>Evidence that counts:</b> ${p.ev}</p>`:""}${p.fix?`<p><b>If you do not have it yet, a low-cost fix:</b> ${p.fix}</p>`:""}</div>`:"")+
+        ((p.ev||p.fix)?`<div class="docblock"><div class="docblock-h">What to document, and how</div><p class="tipnote">Meeting a practice is more than doing it or saying you do. Keep real documentation, a short written policy or procedure where one fits, in final form (a draft does not count) and kept current. Then back it with proof the practice is actually in place: a screenshot, a log, an export, or a current list. A verbal claim is not evidence. Most small businesses already run the controls; they fail because they cannot show the written policy and the proof behind it.</p>${p.ev?`<p><b>Evidence that counts:</b> ${p.ev}</p>`:""}${p.fix?`<p><b>If you do not have it yet, a low-cost fix:</b> ${p.fix}</p>`:""}${SHARED[p.id]?`<p><b>May also help cover:</b> ${SHARED[p.id]}</p>`:""}</div>`:"")+
         `<div class="evidence"><label for="e_${p.id}">Evidence for this control: describe the artifacts <span class="req" title="required to count as Met">*</span></label>`+
         `<textarea id="e_${p.id}" aria-label="${p.id} evidence" placeholder="Name the artifacts that prove these objectives are met and where they live: network diagram, written policy, config screenshot, log export." oninput="setField('${p.id}','evidence',this.value)">${esc(st[p.id].evidence)}</textarea>`+
         `<div class="evhint">The tool keeps your descriptions, not the files, so store the actual documents in your own evidence folder.</div></div>`+
@@ -965,13 +988,14 @@ function recompute(){
       return `<a href="#fam_${f.abbrev}" class="navchip${full?" done":""}" onclick="openFam('${f.abbrev}');return false;">${f.abbrev} ${fm}/${ft}</a>`;
     }).join("");
   }
-  const pct=Math.round(((met+na)/TOTAL_OBJ)*100);
-  document.getElementById("bar").style.width=pct+"%";
+  const oPct=Math.round(((met+na)/TOTAL_OBJ)*100);
+  const segOk=document.getElementById("segOk");
+  if(segOk)segOk.style.width=((met+na)/TOTAL_OBJ*100)+"%";
   const pb=document.getElementById("progress");
-  if(pb){pb.setAttribute("aria-valuenow",pct);pb.setAttribute("aria-valuetext",`${met+na} of ${TOTAL_OBJ} objectives resolved, ${pct} percent`);}
+  if(pb){pb.setAttribute("aria-valuemax",TOTAL_OBJ);pb.setAttribute("aria-valuenow",met+na);pb.setAttribute("aria-valuetext",`${met} of ${TOTAL_OBJ} objectives met, ${oPct} percent`);}
   document.getElementById("countText").textContent=`${met} of ${TOTAL_OBJ} objectives met`;
-  document.getElementById("pctText").textContent=pct+"%";
-  document.getElementById("live").textContent=`${met} of ${TOTAL_OBJ} objectives met, ${pct} percent`;
+  document.getElementById("pctText").textContent=oPct+"%";
+  document.getElementById("live").textContent=`${met} of ${TOTAL_OBJ} objectives met, ${oPct} percent`;
   const vs=document.getElementById("vstatus"),sub=document.getElementById("vSub"),wrap=document.getElementById("progwrap");
   if(pInprog===0&&pNotmet===0&&pAttn===0){
     vs.textContent="Ready to self-attest";vs.dataset.s="ok";wrap.dataset.s="ok";
@@ -995,7 +1019,7 @@ function recompute(){
 }
 
 /* ---- copy / reports ---- */
-function findingWord(p){return {met:"MET",notmet:"NOT MET",na:"NOT APPLICABLE",attn:"MET (documentation incomplete)",inprogress:"IN PROGRESS"}[practiceFinding(p)];}
+function findingWord(p){return {met:"MET",notmet:"NOT MET",na:"N/A",attn:"MET (evidence incomplete)",inprogress:"IN PROGRESS"}[practiceFinding(p)];}
 function objWord(s){return {met:"MET",notmet:"NOT MET",na:"N/A","":"(unmarked)"}[s||""];}
 function stripTags(s){return (s||"").replace(/<[^>]*>/g,"").replace(/\s+/g," ").trim();}
 function practiceText(p){
@@ -1021,35 +1045,39 @@ function copyFamily(ab){
 function copyAll(){
   const o=gatherOrg();
   let met=0;PRACTICES.forEach(p=>p.obj.forEach(x=>{if(st[p.id].obj[x[0]]==="met")met++;}));
-  let h=`SYSTEM SECURITY PLAN (SSP) DRAFT\nCMMC Level 1 Self-Assessment, FAR 52.204-21\n${"=".repeat(60)}\n`;
+  let h=`SYSTEM SECURITY PLAN\nCMMC Level 1 Self-Assessment, FAR 52.204-21\n${"=".repeat(60)}\n`;
   h+=`Content fingerprint ${assessmentFingerprint()} (the same answers always produce this code)\n`;
-  h+=`1. SYSTEM INFORMATION\n`;
+  h+=`This is self-assessment documentation, not a certification, and is not affiliated with or endorsed by the DoD, the Cyber AB, or ISACA.\n\n`;
+  h+=`1. SYSTEM IDENTIFICATION AND SCOPE\n`;
   h+=`Organization: ${o.company||"(unspecified)"}\n`;
   h+=`System / enclave assessed: ${o.system||"(unspecified)"}\n`;
   h+=`Prepared by: ${o.by||"(unspecified)"}    Date: ${o.date||"(unspecified)"}\n`;
   h+=`Affirming senior official: ${o.official||"(unspecified)"}\n`;
-  h+=`Exported: ${new Date().toISOString().slice(0,16).replace("T"," ")} by ${o.updatedby||o.by||"(unspecified)"}\n\n`;
-  h+=`2. SCOPE\n`;
+  h+=`Exported: ${new Date().toISOString().slice(0,16).replace("T"," ")} by ${o.updatedby||o.by||"(unspecified)"}\n`;
   const lvl={fci:"Level 1 (FCI only)",cui:"Level 2 (CUI), wrong tool",unsure:"Not yet determined"}[scopeState.level]||"(not determined)";
   h+=`Level determination: ${lvl}\n`;
   h+=`Scope statement: ${scopeState.notes.trim()||"(not documented)"}\n`;
   const fp=FP_LOCATIONS.filter(l=>scopeState.footprint[l.k]&&!l.cui).map(l=>l.label);
   h+=`FCI footprint (in scope): ${fp.length?fp.join("; "):"(not mapped)"}\n`;
   h+=`Result: ${met} of ${TOTAL_OBJ} objectives marked Met\n\n`;
-  h+=`3. CONTROL IMPLEMENTATION (17 practices, 59 objectives)\n`;
+  h+=`2. CONTROL IMPLEMENTATION (17 practices, 59 objectives)\n`;
   h+=`Source: FAR 52.204-21 (now 52.240-93) / NIST SP 800-171A / DoD CMMC Level 1 Assessment Guide (CC BY 4.0)\n${"=".repeat(60)}\n\n`;
   FAMILIES.forEach(f=>{h+=`### ${f.abbrev}: ${f.name}\n\n`;f.practices.forEach(p=>{h+=practiceText(p)+"\n";});});
   const gaps=PRACTICES.filter(p=>{const fnd=practiceFinding(p);return fnd==="notmet"||fnd==="attn";});
-  h+=`${"=".repeat(60)}\n4. GAPS TO CLOSE BEFORE YOU ATTEST\n`;
+  h+=`${"=".repeat(60)}\n3. GAPS TO CLOSE BEFORE YOU ATTEST\n`;
   if(!gaps.length){h+=`None. Every applicable practice is Met or justified N/A with evidence.\n`;}
   else{gaps.forEach(p=>{const nm=p.obj.filter(x=>st[p.id].obj[x[0]]==="notmet").map(x=>x[0]);h+=`- ${p.id} ${p.name}: ${findingWord(p)}${nm.length?` (objectives not met: ${nm.join(", ")})`:""}${st[p.id].evidence.trim()?"":", needs evidence"}\n`;});}
+  h+=`\n${"=".repeat(60)}\n4. AFFIRMATION\n`;
+  h+=`I affirm that the information in this plan is accurate and that the organization meets the CMMC Level 1 requirements recorded as Met, to the best of my knowledge. Level 1 is reassessed and re-affirmed in SPRS annually.\n\n`;
+  h+=`Affirming senior official: ${o.official||"____________________________"}\n`;
+  h+=`Signature: ____________________________________     Date: __________________\n`;
   if(scopeState.includeAhead){
     h+=`\n${"=".repeat(60)}\nAPPENDIX: LOOKING AHEAD (optional planning, not part of Level 1)\n`;
     h+=`CMMC is assessed against NIST SP 800-171 Rev 2 today; Rev 3 is finalized but not yet required.\n\n`;
     AHEAD.forEach(a=>{const s=aheadState[a.id];h+=`- ${a.title}\n    Maps to Rev 3: ${a.ctrl} ${a.cname} (${a.fam})\n    Status: ${AH_STATUS[s.status]||"Not started"}\n`;if((s.notes||"").trim())h+=`    Notes: ${s.notes.trim()}\n`;});
     h+=`\nRev 3: https://csrc.nist.gov/pubs/sp/800/171/r3/final  (skip FedRAMP unless you handle CUI)\n`;
   }
-  copyText(h,`Copied SSP draft: ${met}/${TOTAL_OBJ} objectives`);
+  copyText(h,`Copied SSP: ${met}/${TOTAL_OBJ} objectives`);
 }
 function gapReport(){
   const o=gatherOrg();
